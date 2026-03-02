@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linguify - 重点笔记本</title>
+    <!--
+      EN HANDOFF NOTE:
+      - "重点笔记本" = "Pinned / Key Notebook"
+      - This HTML is a static mock/demo page with Chinese UI copy and sample content.
+      - Common labels glossary:
+        总笔记=Total notes; 本周新增=Added this week; 待复习=To review; 已掌握=Mastered;
+        全部=All; 语法=Grammar; 词汇=Vocabulary; 语句表达=Expressions; 发音=Pronunciation; 文化常识=Culture/Trivia.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-display {
+            font-family: 'Outfit', sans-serif;
+        }
+        .grid-pattern {
+            background-image: radial-gradient(circle, #0ea5e9 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.05;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(14, 165, 233, 0.15);
+            border-color: rgba(14, 165, 233, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bae6fd;
+            border-radius: 10px;
+        }
+        .nav-workshop-icon {
+            filter: grayscale(1);
+            opacity: 0.65;
+            mix-blend-mode: multiply;
+            transition: filter 0.2s ease, opacity 0.2s ease;
+        }
+        .nav-workshop-active .nav-workshop-icon {
+            filter: none;
+            opacity: 1;
+            mix-blend-mode: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden pb-24">
+        <!-- Background Texture -->
+        <div class="absolute inset-0 grid-pattern pointer-events-none"></div>
+
+        <!-- Header Navigation -->
+        <header class="sticky top-0 z-50 glass px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a id="back-home-link" href="ai语言学习平台-主页.html" class="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm hover:bg-sky-50 transition-colors text-sky-600">
+                    <iconify-icon icon="lucide:arrow-left" width="24"></iconify-icon>
+                </a>
+                <h1 class="text-xl font-bold font-display text-slate-800">重点笔记本</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm hover:bg-sky-50 transition-colors text-slate-600">
+                    <iconify-icon icon="lucide:search" width="20"></iconify-icon>
+                </button>
+                <button class="w-10 h-10 flex items-center justify-center rounded-full bg-sky-600 shadow-lg shadow-sky-200 text-white">
+                    <iconify-icon icon="lucide:plus" width="24"></iconify-icon>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 w-full max-w-4xl mx-auto px-6 py-6 space-y-8 relative z-10">
+            
+            <!-- Stats Section -->
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 rounded-3xl bg-sky-100/50 border border-sky-100">
+                    <p class="text-xs font-semibold text-sky-600 uppercase tracking-wider mb-1">总笔记</p>
+                    <div class="flex items-end gap-1">
+                        <span id="notebook-total-count" class="text-2xl font-bold font-display text-slate-800">0</span>
+                        <span class="text-xs text-slate-500 pb-1">条</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-3xl bg-indigo-100/50 border border-indigo-100">
+                    <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">本周新增</p>
+                    <div class="flex items-end gap-1">
+                        <span id="notebook-week-count" class="text-2xl font-bold font-display text-slate-800">0</span>
+                        <span class="text-xs text-slate-500 pb-1">条</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-3xl bg-amber-100/50 border border-amber-100">
+                    <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">待复习</p>
+                    <div class="flex items-end gap-1">
+                        <span id="notebook-review-count" class="text-2xl font-bold font-display text-slate-800">0</span>
+                        <span class="text-xs text-slate-500 pb-1">个</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-3xl bg-emerald-100/50 border border-emerald-100">
+                    <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">已掌握</p>
+                    <div class="flex items-end gap-1">
+                        <span id="notebook-mastered-rate" class="text-2xl font-bold font-display text-slate-800">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Category Filters -->
+            <section class="flex overflow-x-auto gap-3 pb-2 custom-scrollbar">
+                <button class="px-5 py-2 rounded-full bg-sky-600 text-white text-sm font-medium whitespace-nowrap shadow-md shadow-sky-100">全部</button>
+                <button class="px-5 py-2 rounded-full bg-white text-slate-600 border border-slate-100 text-sm font-medium whitespace-nowrap hover:bg-sky-50 transition-colors">语法</button>
+                <button class="px-5 py-2 rounded-full bg-white text-slate-600 border border-slate-100 text-sm font-medium whitespace-nowrap hover:bg-sky-50 transition-colors">词汇</button>
+                <button class="px-5 py-2 rounded-full bg-white text-slate-600 border border-slate-100 text-sm font-medium whitespace-nowrap hover:bg-sky-50 transition-colors">语句表达</button>
+                <button class="px-5 py-2 rounded-full bg-white text-slate-600 border border-slate-100 text-sm font-medium whitespace-nowrap hover:bg-sky-50 transition-colors">发音</button>
+                <button class="px-5 py-2 rounded-full bg-white text-slate-600 border border-slate-100 text-sm font-medium whitespace-nowrap hover:bg-sky-50 transition-colors">文化常识</button>
+            </section>
+
+            <!-- Knowledge Grid -->
+            <section class="space-y-4">
+                <div id="notebook-empty" class="hidden rounded-3xl bg-white/70 border border-slate-100 p-8 text-center text-slate-500">
+                    暂无收藏内容，去黑板里选中文本收藏吧。
+                </div>
+                <div id="notebook-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </section>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-6 left-6 right-6 z-50">
+            <div class="glass rounded-[2rem] shadow-2xl shadow-sky-200/50 p-2 flex justify-between items-center">
+                <a id="nav-home" href="ai语言学习平台-主页.html" class="flex-1 flex flex-col items-center justify-center py-2 text-slate-400 hover:text-sky-600 transition-colors">
+                    <iconify-icon icon="lucide:home" width="24"></iconify-icon>
+                    <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">首页</span>
+                </a>
+                <a id="nav-notebook" href="#" class="flex-1 flex flex-col items-center justify-center py-2 text-sky-600">
+                    <div class="relative">
+                        <iconify-icon icon="lucide:book-marked" width="24"></iconify-icon>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-sky-600 rounded-full border-2 border-white"></div>
+                    </div>
+                    <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">笔记本</span>
+                </a>
+                <a id="nav-rank" href="课程工坊页面.html" class="flex-1 flex flex-col items-center justify-center py-2 text-slate-400 hover:text-sky-600 transition-colors">
+                    <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+                    <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">课程工坊</span>
+                </a>
+                <a id="nav-profile" href="#" class="flex-1 flex flex-col items-center justify-center py-2 text-slate-400 hover:text-sky-600 transition-colors">
+                    <iconify-icon icon="lucide:user" width="24"></iconify-icon>
+                    <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">我的</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const LANG_KEY = 'ui-language';
+            const NOTEBOOK_STORAGE_KEY = 'linguify-notebook';
+            const lang = localStorage.getItem(LANG_KEY) || 'zh-CN';
+
+            const LABELS = {
+                'zh-CN': {
+                    empty: '暂无收藏内容，去黑板里选中文本收藏吧。',
+                    tag_default: '板书摘录',
+                    title_default: '黑板内容',
+                    saved_on: '收藏于',
+                    source_default: '黑板',
+                    node_prefix: '节点',
+                    unknown_date: '未知日期'
+                },
+                'en': {
+                    empty: 'No saved notes yet. Select text on the blackboard to save it.',
+                    tag_default: 'Board Snippet',
+                    title_default: 'Blackboard Note',
+                    saved_on: 'Saved on',
+                    source_default: 'Blackboard',
+                    node_prefix: 'Node',
+                    unknown_date: 'Unknown date'
+                }
+            };
+            const labels = LABELS[lang] || LABELS['zh-CN'];
+
+            if (lang === 'en') {
+                document.documentElement.lang = 'en';
+                document.title = 'Linguify - Notebook';
+            }
+
+            function loadJsonStorage(key, fallback) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (!raw) return fallback;
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') return parsed;
+                } catch (e) {
+                    // ignore
+                }
+                return fallback;
+            }
+
+            function escapeHtml(value) {
+                return (value || '').toString()
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function formatDate(value) {
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return '';
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}.${month}.${day}`;
+            }
+
+            function isWithinDays(value, days) {
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return false;
+                const diff = Date.now() - date.getTime();
+                return diff <= days * 24 * 60 * 60 * 1000;
+            }
+
+            function normalizeItems(raw) {
+                const list = Array.isArray(raw) ? raw : [];
+                return list
+                    .map(item => (item && typeof item === 'object') ? item : null)
+                    .filter(item => item && item.text)
+                    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+            }
+
+            function updateStats(items) {
+                const total = items.length;
+                const weekCount = items.filter(item => isWithinDays(item.created_at, 7)).length;
+                const reviewCount = Math.max(0, total - weekCount);
+                const masteredRate = 0;
+
+                const totalEl = document.getElementById('notebook-total-count');
+                const weekEl = document.getElementById('notebook-week-count');
+                const reviewEl = document.getElementById('notebook-review-count');
+                const masteredEl = document.getElementById('notebook-mastered-rate');
+
+                if (totalEl) totalEl.textContent = String(total);
+                if (weekEl) weekEl.textContent = String(weekCount);
+                if (reviewEl) reviewEl.textContent = String(reviewCount);
+                if (masteredEl) masteredEl.textContent = `${masteredRate}%`;
+            }
+
+            function buildNoteCard(item) {
+                const tag = item.node_title
+                    ? item.node_title
+                    : (item.node_id ? `${labels.node_prefix} ${item.node_id}` : labels.tag_default);
+                const title = item.board_title || labels.title_default;
+                const source = item.board_title || labels.source_default;
+                const dateText = formatDate(item.created_at) || labels.unknown_date;
+                const snippet = escapeHtml((item.text || '').toString()).replace(/\n/g, '<br>');
+
+                return `
+                <div class="glass-card p-6 rounded-[2.5rem] flex flex-col group" data-note-id="${escapeHtml(item.id || '')}">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 rounded-full bg-sky-100 text-sky-600 text-[10px] font-bold uppercase tracking-widest">${escapeHtml(tag)}</span>
+                        <button type="button" class="text-slate-300 group-hover:text-amber-400 transition-colors">
+                            <iconify-icon icon="lucide:star" class="fill-current" width="18"></iconify-icon>
+                        </button>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2 leading-tight">${escapeHtml(title)}</h3>
+                    <p class="text-sm text-slate-500 whitespace-pre-wrap mb-4">${snippet}</p>
+                    <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                        <div class="flex items-center gap-1.5">
+                            <iconify-icon icon="lucide:calendar" width="12"></iconify-icon>
+                            <span>${labels.saved_on} ${escapeHtml(dateText)}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <iconify-icon icon="lucide:book-open" width="12"></iconify-icon>
+                            <span>${escapeHtml(source)}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            function renderNotebook(items) {
+                const grid = document.getElementById('notebook-grid');
+                const emptyEl = document.getElementById('notebook-empty');
+                if (emptyEl) emptyEl.textContent = labels.empty;
+                if (!grid || !emptyEl) return;
+                if (!items.length) {
+                    emptyEl.classList.remove('hidden');
+                    grid.innerHTML = '';
+                    return;
+                }
+                emptyEl.classList.add('hidden');
+                grid.innerHTML = items.map(buildNoteCard).join('');
+            }
+
+            const stored = loadJsonStorage(NOTEBOOK_STORAGE_KEY, []);
+            const items = normalizeItems(stored);
+            renderNotebook(items);
+            updateStats(items);
+
+            if (lang !== 'en') return;
+
+            const map = {
+                '重点笔记本': 'Notebook',
+                '总笔记': 'Total Notes',
+                '条': 'items',
+                '本周新增': 'New This Week',
+                '待复习': 'To Review',
+                '个': 'items',
+                '已掌握': 'Mastered',
+                '全部': 'All',
+                '语法': 'Grammar',
+                '词汇': 'Vocabulary',
+                '语句表达': 'Expressions',
+                '发音': 'Pronunciation',
+                '文化常识': 'Culture',
+                '首页': 'Home',
+                '笔记本': 'Notebook',
+                '课程工坊': 'Course Workshop',
+                '我的': 'Me'
+            };
+
+            const paragraphMap = {
+                '在职场对话中，动作主体是对方时使用尊敬语（如：おっしゃる），动作主体是自己时使用谦让语（如：申す）。':
+                    'In workplace conversations, use respectful forms when the subject is the other person (e.g., おっしゃる), and humble forms when the subject is yourself (e.g., 申す).',
+                '不仅仅是 Baguette。了解“Une tradition bien cuite”（烤得透的法棍）与“croquant”的微妙差别。':
+                    'Not just baguette. Learn the nuance between “Une tradition bien cuite” (well-baked baguette) and “croquant”.',
+                '“Be that as it may” 比简单的 “However” 更能展示语言深度。适用于需要承认对方观点但维持己见的场合。':
+                    '“Be that as it may” shows more nuance than “However” and is used when you acknowledge the other side but keep your stance.',
+                'Energiewende (能源转型) 不仅仅是一个词，它代表了自2011年以来德国核电退出和碳中和的全套政策背景。':
+                    'Energiewende (energy transition) is more than a word; it represents Germany’s full policy shift away from nuclear and toward carbon neutrality since 2011.',
+                '当收音遇到元音开头的音节时，收音要移到后面音节的位置发音。例如：한국어 [한구거]。':
+                    'When a final consonant is followed by a vowel, it moves to the next syllable. Example: 한국어 [한구거].',
+                '表达主观愿望或情感时（如：Me alegra que...）从句动词必须变位为虚拟式。':
+                    'When expressing wishes or emotions (e.g., Me alegra que...), the verb in the clause must be in the subjunctive.',
+                '“Un caffè” 通常指浓缩咖啡。站在吧台喝比坐着喝更便宜，且上午11点后点卡布奇诺会被视为“外行”。':
+                    '“Un caffè” usually means espresso. Drinking at the bar is cheaper than sitting, and ordering cappuccino after 11 a.m. is considered a tourist move.',
+                'Had done 强调状态或结果；Had been doing 强调过程的持续性，直到过去的某个点。':
+                    '“Had done” emphasizes state/result; “had been doing” emphasizes ongoing action up to a point in the past.'
+            };
+
+            function replaceText(el) {
+                const text = el.textContent.trim();
+                if (!text) return;
+                if (map[text]) {
+                    el.textContent = map[text];
+                    return;
+                }
+                if (paragraphMap[text]) {
+                    el.textContent = paragraphMap[text];
+                    return;
+                }
+                if (text.startsWith('收藏于')) {
+                    el.textContent = text.replace('收藏于', 'Saved on');
+                }
+            }
+
+            document.querySelectorAll('h1,h2,h3,p,span,button,a').forEach(replaceText);
+        })();
+    </script>
+</body>
+</html>

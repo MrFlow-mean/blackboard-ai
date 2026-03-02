@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- EN: zh-CN UI strings on this page have English equivalents in the embedded i18n dictionary (look for the 'en' section). -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://api.fontshare.com/v2/css?f[]=outfit@400,500,600,700&f[]=plus-jakarta-sans@400,500,600&display=swap');
+    :root { --primary: #0ea5e9; --primary-light: #7dd3fc; --bg: #f8fafc; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg); overflow-x: hidden; }
+    h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+    .grid-bg { background-image: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 24px 24px; }
+    .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    .step-line { position: absolute; top: 12px; left: 0; right: 0; height: 2px; background: #e2e8f0; z-index: 0; }
+    .step-active-line { position: absolute; top: 12px; left: 0; width: 33%; height: 2px; background: var(--primary); z-index: 1; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .animate-fade-up { animation: fadeUp 0.6s ease-out forwards; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .goal-chip input:checked + label { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
+    .goal-chip label { transition: all 0.2s ease; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen grid-bg relative flex items-center justify-center p-4 sm:p-8">
+    <div class="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-100 rounded-full blur-[100px] opacity-60 z-0"></div>
+    <div class="fixed bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-blue-100 rounded-full blur-[100px] opacity-60 z-0"></div>
+    <main class="w-full max-w-2xl relative z-10 animate-fade-up">
+      <div class="mb-12">
+        <div class="relative w-full max-w-xs mx-auto mb-8">
+          <div class="step-line"></div>
+          <div class="step-active-line"></div>
+          <div class="relative z-10 flex justify-between">
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-sky-500 border-4 border-sky-100 flex items-center justify-center shadow-lg"></div>
+              <span class="text-xs font-semibold text-sky-600" data-i18n="step_profile">个人信息</span>
+            </div>
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center"></div>
+              <span class="text-xs font-medium text-slate-400" data-i18n="step_goal">学习目标</span>
+            </div>
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center"></div>
+              <span class="text-xs font-medium text-slate-400" data-i18n="step_start">开启学习</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass rounded-3xl p-8 sm:p-12 shadow-2xl shadow-sky-100/50">
+        <div class="text-center mb-10">
+          <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-3" data-i18n="profile_title">完善你的个人信息</h1>
+          <p class="text-slate-500" data-i18n="profile_desc">帮助我们为你定制最适合的学习方案，开启你的语言之旅</p>
+        </div>
+        <form class="space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="region" class="block text-sm font-semibold text-slate-700 mb-2" data-i18n="label_region">所在地区</label>
+              <div class="relative">
+                <select id="region" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all cursor-pointer">
+                  <option value="" data-i18n="option_region_placeholder">选择国家/地区</option>
+                  <option value="cn" data-i18n="option_country_cn">中国</option>
+                  <option value="us" data-i18n="option_country_us">美国</option>
+                  <option value="jp" data-i18n="option_country_jp">日本</option>
+                  <option value="uk" data-i18n="option_country_uk">英国</option>
+                  <option value="fr" data-i18n="option_country_fr">法国</option>
+                </select>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="language" class="block text-sm font-semibold text-slate-700 mb-2" data-i18n="label_native">母语</label>
+              <div class="relative">
+                <select id="language" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all cursor-pointer">
+                  <option value="" data-i18n="option_native_placeholder">选择你的母语</option>
+                  <option value="zh" data-i18n="option_native_zh">中文 (普通话)</option>
+                  <option value="en" data-i18n="option_native_en">英语 (English)</option>
+                  <option value="jp" data-i18n="option_native_jp">日语 (日本語)</option>
+                  <option value="de" data-i18n="option_native_de">德语 (Deutsch)</option>
+                  <option value="fr" data-i18n="option_native_fr">法语 (Français)</option>
+                </select>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="birthday" class="block text-sm font-semibold text-slate-700 mb-2" data-i18n="label_birth">出生日期</label>
+            <div class="relative">
+              <input type="date" id="birthday" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <iconify-icon icon="lucide:calendar"></iconify-icon>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-4" data-i18n="label_goals">你的学习目标 (可多选)</label>
+            <div class="grid grid-cols-2 sm:grid-cols-2 gap-3">
+              <div class="goal-chip">
+                <input type="checkbox" id="goal1" class="hidden" checked>
+                <label for="goal1" class="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium text-sm">
+                  <iconify-icon icon="lucide:message-circle" class="text-lg"></iconify-icon>
+                  <span data-i18n="goal_speaking">提升口语</span>
+                </label>
+              </div>
+              <div class="goal-chip">
+                <input type="checkbox" id="goal2" class="hidden">
+                <label for="goal2" class="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium text-sm">
+                  <iconify-icon icon="lucide:graduation-cap" class="text-lg"></iconify-icon>
+                  <span data-i18n="goal_abroad">留学准备</span>
+                </label>
+              </div>
+              <div class="goal-chip">
+                <input type="checkbox" id="goal3" class="hidden">
+                <label for="goal3" class="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium text-sm">
+                  <iconify-icon icon="lucide:briefcase" class="text-lg"></iconify-icon>
+                  <span data-i18n="goal_work">工作需要</span>
+                </label>
+              </div>
+              <div class="goal-chip">
+                <input type="checkbox" id="goal4" class="hidden">
+                <label for="goal4" class="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium text-sm">
+                  <iconify-icon icon="lucide:plane" class="text-lg"></iconify-icon>
+                  <span data-i18n="goal_travel">旅游交流</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6">
+            <a href="#" id="skip-link" class="text-slate-400 hover:text-slate-600 text-sm font-medium transition-colors underline underline-offset-4" data-i18n="skip">暂时跳过</a>
+            <button type="submit" id="next-step-btn" class="w-full sm:w-auto px-10 py-4 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl font-bold shadow-lg shadow-sky-500/30 hover:shadow-sky-500/40 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+              <span data-i18n="next">下一步</span>
+              <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+            </button>
+          </div>
+        </form>
+      </div>
+      <p class="text-center mt-8 text-slate-400 text-xs" data-i18n="footer_tip">所有信息将仅用于为您提供个性化的教学内容</p>
+    </main>
+  </div>
+
+  <script>
+    const PROFILE_I18N = {
+      'zh-CN': {
+        step_profile: '个人信息',
+        step_goal: '学习目标',
+        step_start: '开启学习',
+        profile_title: '完善你的个人信息',
+        profile_desc: '帮助我们为你定制最适合的学习方案，开启你的语言之旅',
+        label_region: '所在地区',
+        option_region_placeholder: '选择国家/地区',
+        option_country_cn: '中国',
+        option_country_us: '美国',
+        option_country_jp: '日本',
+        option_country_uk: '英国',
+        option_country_fr: '法国',
+        label_native: '母语',
+        option_native_placeholder: '选择你的母语',
+        option_native_zh: '中文 (普通话)',
+        option_native_en: '英语 (English)',
+        option_native_jp: '日语 (日本語)',
+        option_native_de: '德语 (Deutsch)',
+        option_native_fr: '法语 (Français)',
+        label_birth: '出生日期',
+        label_goals: '你的学习目标 (可多选)',
+        goal_speaking: '提升口语',
+        goal_abroad: '留学准备',
+        goal_work: '工作需要',
+        goal_travel: '旅游交流',
+        skip: '暂时跳过',
+        next: '下一步',
+        footer_tip: '所有信息将仅用于为您提供个性化的教学内容',
+        title: 'Linguify - 用户信息'
+      },
+      'en': {
+        step_profile: 'Profile',
+        step_goal: 'Learning Goals',
+        step_start: 'Start Learning',
+        profile_title: 'Complete Your Profile',
+        profile_desc: 'Help us tailor the best learning plan for you and start your journey.',
+        label_region: 'Region',
+        option_region_placeholder: 'Select country/region',
+        option_country_cn: 'China',
+        option_country_us: 'United States',
+        option_country_jp: 'Japan',
+        option_country_uk: 'United Kingdom',
+        option_country_fr: 'France',
+        label_native: 'Native Language',
+        option_native_placeholder: 'Select your native language',
+        option_native_zh: 'Chinese (Mandarin)',
+        option_native_en: 'English',
+        option_native_jp: 'Japanese',
+        option_native_de: 'German',
+        option_native_fr: 'French',
+        label_birth: 'Date of Birth',
+        label_goals: 'Your learning goals (multiple choice)',
+        goal_speaking: 'Improve Speaking',
+        goal_abroad: 'Study Abroad Prep',
+        goal_work: 'Work Needs',
+        goal_travel: 'Travel Communication',
+        skip: 'Skip for now',
+        next: 'Next',
+        footer_tip: 'All information is used only to personalize your learning.',
+        title: 'Linguify - Profile Setup'
+      }
+    };
+
+    const profileLang = localStorage.getItem('ui-language') || 'zh-CN';
+    const profileDict = PROFILE_I18N[profileLang] || PROFILE_I18N['zh-CN'];
+    document.documentElement.lang = profileLang === 'en' ? 'en' : 'zh-CN';
+    document.title = profileDict.title;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (profileDict[key]) {
+        el.textContent = profileDict[key];
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const nextBtn = document.getElementById('next-step-btn');
+      const skipLink = document.getElementById('skip-link');
+      const form = document.querySelector('form');
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location.href = 'ai语言学习平台-主页.html';
+        });
+      }
+      if (skipLink) {
+        skipLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location.href = 'ai语言学习平台-主页.html';
+        });
+      }
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          window.location.href = 'ai语言学习平台-主页.html';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

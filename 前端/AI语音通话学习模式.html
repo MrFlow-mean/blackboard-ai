@@ -1,0 +1,3368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linguify AI - Voice Learning</title>
+  <!-- EN: zh-CN UI strings on this page have English equivalents in the VOICE_I18N['en'] dictionary below. -->
+  <script src="https://cdn.tailwindcss.com/"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    html { background-color: rgb(248, 250, 252); scroll-behavior: smooth; }
+
+    .noise {
+      background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.035) 1px, transparent 0px); 
+      background-size: 18px 18px; opacity: 0.55; mix-blend-mode: multiply; pointer-events: none; 
+    }
+
+    .orb {
+      position: relative;
+      border-radius: 9999px;
+      overflow: hidden;
+      transform: translateZ(0);
+      box-shadow: 0 30px 80px rgba(14, 165, 233, 0.18), 0 12px 30px rgba(56, 189, 248, 0.16);
+      transition: all 1s cubic-bezier(0.65, 0, 0.35, 1);
+      cursor: pointer;
+      z-index: 30;
+      background-color: white;
+    }
+
+    .orb::before {
+      content: "";
+      position: absolute;
+      top: -30%; right: -30%; bottom: -30%; left: -30%;
+      background: radial-gradient(closest-side at 30% 30%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0) 60%),
+                  radial-gradient(closest-side at 70% 38%, rgba(186, 230, 253, 0.95), rgba(186, 230, 253, 0) 58%),
+                  radial-gradient(closest-side at 52% 78%, rgba(14, 165, 233, 0.92), rgba(14, 165, 233, 0) 60%),
+                  radial-gradient(closest-side at 40% 92%, rgba(56, 189, 248, 0.95), rgba(56, 189, 248, 0) 58%),
+                  radial-gradient(closest-side at 78% 92%, rgba(125, 211, 252, 0.85), rgba(125, 211, 252, 0) 60%);
+      filter: blur(8px);
+      animation: drift 7.5s ease-in-out infinite;
+    }
+
+    .ripple {
+      position: absolute;
+      top: -10%; right: -10%; bottom: -10%; left: -10%;
+      border-radius: inherit;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.15) 44%, rgba(255, 255, 255, 0) 56%),
+                  radial-gradient(circle, rgba(14, 165, 233, 0) 33%, rgba(14, 165, 233, 0.18) 48%, rgba(14, 165, 233, 0) 66%);
+      animation: pulse 2.2s ease-in-out infinite;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .is-split .orb {
+      cursor: default;
+      border-radius: 2.5rem;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .is-split .ripple { opacity: 0; }
+
+    :root {
+      --layout-gap: 0px;
+      --chat-size-row: 34%;
+      --chat-size-col: 42%;
+    }
+
+    #content-grid {
+      transition: all 1s cubic-bezier(0.65, 0, 0.35, 1);
+      width: 100%;
+      display: flex;
+      gap: var(--layout-gap);
+      align-items: stretch;
+      position: relative;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #content-grid.layout-row { flex-direction: row; }
+    #content-grid.layout-row.chat-first { flex-direction: row-reverse; }
+    #content-grid.layout-col { flex-direction: column; }
+    #content-grid.layout-col.chat-first { flex-direction: column-reverse; }
+
+    .blackboard-card {
+      transition: all 1s cubic-bezier(0.65, 0, 0.35, 1);
+      width: 0%;
+      height: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    .is-split .blackboard-card {
+      width: auto;
+      height: auto;
+      opacity: 1;
+      margin-right: 0;
+      flex: 1 1 0%;
+      align-self: stretch;
+    }
+
+    .interaction-container {
+      transition: all 1s cubic-bezier(0.65, 0, 0.35, 1);
+      width: 420px;
+      height: auto;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      align-self: stretch;
+    }
+
+    .is-split #content-grid.layout-row .interaction-container {
+      width: auto;
+      height: 100%;
+      flex: 0 0 var(--chat-size-row);
+      align-items: stretch;
+    }
+
+    .is-split #content-grid.layout-col .interaction-container {
+      width: 100%;
+      height: auto;
+      flex: 0 0 var(--chat-size-col);
+    }
+
+    .is-split .interaction-container {
+      height: 100% !important;
+      min-height: 0 !important;
+      align-self: stretch !important;
+    }
+
+    .is-split #interaction-area,
+    .is-split #orb-container,
+    .is-split .voice-messages-container {
+      height: 100% !important;
+    }
+
+    .voice-messages-container {
+      transition: opacity 0.5s ease 0.6s;
+      opacity: 0;
+    }
+
+    .is-split .voice-messages-container { opacity: 1; }
+
+    .chat-message-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-msg-row {
+      display: flex;
+      width: 100%;
+    }
+
+    .chat-msg-row.user { justify-content: flex-end; }
+    .chat-msg-row.assistant,
+    .chat-msg-row.system { justify-content: flex-start; }
+
+    .chat-msg-bubble {
+      max-width: 82%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      line-height: 1.45;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .chat-msg-row.user .chat-msg-bubble {
+      background: #0ea5e9;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .chat-msg-row.assistant .chat-msg-bubble {
+      background: #fff;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 6px;
+    }
+
+    .chat-msg-row.system .chat-msg-bubble {
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px dashed #cbd5e1;
+      border-bottom-left-radius: 6px;
+    }
+
+    .press { transition: transform 0.12s ease, box-shadow 0.2s ease; }
+    .press:active { transform: translateY(1px) scale(0.98); }
+
+    /* Blackboard typography for better paragraph readability */
+    #blackboard-node-content {
+      line-height: 1.85;
+      letter-spacing: 0.01em;
+      text-wrap: pretty;
+    }
+    #blackboard-node-content p { margin: 0 0 0.9em; }
+    #chat-text-input {
+      min-height: 56px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .dark-blackboard { background-color: rgb(4, 13, 26); color: rgb(226, 232, 240); height: 100%; }
+
+    .board-outline-item {
+      border: 1px solid rgba(100, 116, 139, 0.35);
+      background: rgba(15, 23, 42, 0.35);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #cbd5e1;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .board-outline-item .node-id {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(30, 41, 59, 0.8);
+      color: #94a3b8;
+      margin-right: 8px;
+    }
+
+    .board-outline-item .node-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .board-outline-item .node-status {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .board-outline-item.active {
+      border-color: rgba(56, 189, 248, 0.65);
+      background: rgba(14, 165, 233, 0.18);
+      box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.28) inset;
+    }
+
+    .board-outline-item.active .node-id {
+      background: rgba(14, 165, 233, 0.9);
+      color: #fff;
+    }
+
+    .is-split #content-grid.layout-row #blackboard,
+    .is-split #content-grid.layout-row #interaction-area {
+      height: 100%;
+    }
+
+    .is-split #content-grid.layout-row #orb-container,
+    .is-split #content-grid.layout-row .voice-messages-container {
+      height: 100%;
+    }
+
+    .mini-orb-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: none;
+      background: url("file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-ff729e63-4f92-4201-b168-ad0189bb28b7-17409cf0-6dfa-400d-a9c6-a6b307ea78e3.png") center/cover no-repeat;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s ease, box-shadow 0.2s ease;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.84); opacity: 0.2; }
+      35% { opacity: 0.95; }
+      70% { transform: scale(1.04); opacity: 0.35; }
+      100% { transform: scale(0.84); opacity: 0.2; }
+    }
+
+    @keyframes drift {
+      0%, 100% { transform: translate3d(-2%, -1%, 0) scale(1.02) rotate(-2deg); }
+      50% { transform: translate3d(2%, 1.5%, 0) scale(1.06) rotate(2deg); }
+    }
+
+    #main-wrapper.is-split #time-display {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Hide header and expand content in split mode */
+    #main-wrapper.is-split header {
+      display: none;
+    }
+
+    #main-wrapper.is-split main {
+      padding: 0 !important;
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      overflow: hidden !important;
+    }
+
+    #main-wrapper.is-split #content-grid {
+      height: 100vh !important;
+      height: 100dvh !important;
+      min-height: 0 !important;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      margin: 0 !important;
+      align-items: stretch !important;
+      gap: 0 !important;
+    }
+
+    #main-wrapper.is-split main {
+      height: 100vh !important;
+    }
+
+    #main-wrapper.is-split .blackboard-card,
+    #main-wrapper.is-split .interaction-container {
+      height: 100% !important;
+      overflow: hidden !important;
+      max-height: 100% !important;
+    }
+
+    #main-wrapper.is-split #blackboard,
+    #main-wrapper.is-split #interaction-area {
+      height: 100% !important;
+      overflow: hidden !important;
+      max-height: 100% !important;
+    }
+
+    #main-wrapper.is-split .voice-messages-container {
+      height: 100% !important;
+    }
+
+    #main-wrapper.is-split .voice-messages-container > .flex-1 {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    #main-wrapper.is-split .dark-blackboard,
+    #main-wrapper.is-split .orb {
+      border-radius: 0 !important;
+    }
+
+    #main-wrapper.is-split .dark-blackboard,
+    #main-wrapper.is-split .orb {
+      border-radius: 0;
+    }
+
+    #main-wrapper.is-split .dark-blackboard {
+      padding: 2.5rem;
+      border-radius: 2rem;
+    }
+
+    #main-wrapper.is-split .interaction-container {
+      min-height: 0;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      border-radius: 999px;
+      height: 34px;
+      width: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      color: #94a3b8;
+      transition: transform 0.12s ease, box-shadow 0.2s ease, color 0.2s ease;
+    }
+
+    .drag-handle:hover {
+      color: #475569;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .drag-handle:active { cursor: grabbing; transform: translateY(1px) scale(0.98); }
+
+    .drag-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .drag-overlay.active {
+      display: block;
+    }
+
+    .drop-zone {
+      position: absolute;
+      border: 2px dashed rgba(148, 163, 184, 0.5);
+      border-radius: 16px;
+      opacity: 0;
+      transition: opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    .drop-zone.is-active {
+      opacity: 1;
+      background: rgba(148, 163, 184, 0.12);
+    }
+
+    .drop-left { top: 0; left: 0; bottom: 0; width: 28%; }
+    .drop-right { top: 0; right: 0; bottom: 0; width: 28%; }
+    .drop-top { top: 0; left: 0; right: 0; height: 30%; }
+    .drop-bottom { bottom: 0; left: 0; right: 0; height: 30%; }
+    /* --- FIX: Keep both panes aligned in split mode --- */
+#main-wrapper.is-split #content-grid.layout-row {
+  height: 100% !important;
+}
+
+#main-wrapper.is-split .interaction-container {
+  height: 100% !important;
+  align-self: stretch !important;
+  min-height: 0 !important;
+}
+
+#main-wrapper.is-split #interaction-area,
+#main-wrapper.is-split #orb-container,
+#main-wrapper.is-split .voice-messages-container {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+    /* split height fix (must be last) */
+    #main-wrapper.is-split #content-grid.layout-row { height: 100% !important; }
+    #main-wrapper.is-split .interaction-container { height: 100% !important; align-self: stretch !important; min-height: 0 !important; }
+    #main-wrapper.is-split #interaction-area,
+    #main-wrapper.is-split #orb-container,
+    #main-wrapper.is-split .voice-messages-container { height: 100% !important; min-height: 0 !important; }
+/* Move orb down a bit in split mode */
+#main-wrapper.is-split #orb-container {
+  margin-top: 100px;
+}
+
+</style>
+</head>
+<body>
+  <div id="main-wrapper" class="h-screen flex flex-col bg-slate-50 text-slate-900 relative overflow-hidden">
+    <div class="noise absolute inset-0"></div>
+
+    <!-- Header -->
+    <header class="relative z-50 px-6 pt-6 sm:px-10">
+      <div class="max-w-full mx-auto flex items-center justify-between">
+        <a id="nav-back-link" href="#" onclick="handleBackClick(event)" class="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-slate-700 hover:text-slate-900 hover:bg-white/80 transition-all press">
+          <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-slate-200 shadow-sm">
+            <iconify-icon icon="lucide:chevron-left" class="text-[20px]"></iconify-icon>
+          </span>
+          <span class="hidden sm:block font-semibold" data-i18n="nav_back">返回</span>
+        </a>
+
+        <div class="flex flex-col items-center">
+          <div class="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 ring-1 ring-slate-200 shadow-sm">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-500 opacity-30"></span>
+              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-500"></span>
+            </span>
+            <span class="text-[14px] font-bold tracking-wide text-slate-800" data-i18n="status_calling">正在通话</span>
+          </div>
+        </div>
+
+        <a id="nav-settings-link" href="设置页面.html" class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white ring-1 ring-slate-200 shadow-sm hover:shadow-md hover:bg-white press">
+          <iconify-icon icon="lucide:settings" class="text-[20px] text-slate-700"></iconify-icon>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 flex-1 flex flex-col justify-center items-center px-6 md:px-10 transition-all duration-1000">
+      <div id="content-grid" class="max-w-[1800px] w-full flex flex-row items-center justify-center layout-row">
+        
+        <!-- Left Part: Blackboard -->
+        <section id="blackboard" class="blackboard-card flex-shrink-0">
+          <div class="dark-blackboard rounded-[2.5rem] p-12 h-full relative overflow-hidden shadow-2xl flex flex-col">
+            <div class="relative z-10 flex-1 min-h-0 overflow-y-auto pr-2">
+              <div class="mb-8 flex items-start justify-between gap-4">
+                <div>
+                  <h4 class="text-emerald-400 text-xs font-bold uppercase tracking-[0.25em] mb-4" data-i18n="board_title">讲述内容</h4>
+                  <h2 id="blackboard-title" class="text-4xl font-bold leading-tight max-w-2xl" data-i18n="board_desc">你好同学！今天想学些什么呢？</h2>
+                </div>
+                <button class="drag-handle" data-drag-handle aria-label="拖拽布局" data-i18n-aria="drag_handle">
+                  <iconify-icon icon="lucide:grip" class="text-[18px]"></iconify-icon>
+                </button>
+              </div>
+              
+              <div class="space-y-8">
+                <!-- 纯板书原文模式：隐藏目录/分类（仍保留DOM以兼容现有逻辑） -->
+                <div id="blackboard-tags" class="hidden flex flex-wrap gap-5"></div>
+                <div id="blackboard-outline" class="hidden space-y-2"></div>
+
+                <!-- Current Node Content -->
+                <div id="blackboard-node-panel" class="mt-10">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">板书正文</div>
+                    <div class="flex items-center gap-2">
+                      <button id="bb-edit-btn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-bold press hover:bg-slate-900/55">
+                        编辑
+                      </button>
+                      <button id="bb-save-selection-btn" type="button" class="px-3 py-1.5 rounded-xl bg-amber-400/90 text-slate-900 text-xs font-bold press hover:bg-amber-400" data-i18n="bb_save_selection">
+                        收藏选中
+                      </button>
+                      <button id="bb-save-btn" type="button" class="hidden px-3 py-1.5 rounded-xl bg-emerald-500/90 text-white text-xs font-bold press hover:bg-emerald-500">
+                        保存
+                      </button>
+                      <button id="bb-cancel-btn" type="button" class="hidden px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold press hover:bg-slate-200">
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                  <div id="blackboard-node-heading" class="text-xl font-bold text-slate-100"></div>
+                  <div id="blackboard-node-content" class="mt-4 text-slate-200 text-sm leading-relaxed whitespace-pre-wrap"></div>
+                  <div class="mt-4 flex items-center justify-between gap-3">
+                    <div class="text-xs font-semibold text-slate-400">示例/对话/练习</div>
+                    <button id="bb-add-example-btn" type="button" class="hidden px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-bold press hover:bg-slate-900/55">
+                      + 添加
+                    </button>
+                  </div>
+                  <div id="blackboard-node-examples" class="mt-3 space-y-3"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative z-10 pt-10 border-t border-slate-800/50 mt-auto">
+              <p class="text-slate-500 text-sm italic" data-i18n="split_hint">提示：再次点击右侧球体可收起分屏。</p>
+            </div>
+
+            <!-- Decoration -->
+            <div class="absolute bottom-[-20px] right-[-20px] opacity-[0.04]">
+              <iconify-icon icon="lucide:brain-circuit" class="text-[320px]"></iconify-icon>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Part: Interaction Area (Orb) -->
+        <section id="interaction-area" class="interaction-container">
+          <div id="orb-container" onclick="handleOrbClick(event)" class="orb w-[420px] h-[420px] shrink-0">
+            <div class="ripple"></div>
+            <div class="ripple r2"></div>
+            
+            <!-- Chat UI (Visible in split) -->
+            <div class="voice-messages-container absolute inset-0 z-20 flex flex-col">
+              <div class="flex items-center justify-between p-6 border-b border-slate-100">
+                <div class="flex flex-col">
+                  <h3 class="text-xl font-bold text-slate-800" data-i18n="chat_title">实时对话</h3>
+                  <p class="text-[12px] text-slate-400" data-i18n="chat_subtitle">文字与语音在同一对话中交互</p>
+            </div>
+                <div class="flex gap-3">
+                  <button class="drag-handle" data-drag-handle aria-label="拖拽布局" data-i18n-aria="drag_handle">
+                    <iconify-icon icon="lucide:grip" class="text-[18px]"></iconify-icon>
+                  </button>
+                  <a href="设置页面.html" onclick="event.stopPropagation();" class="flex items-center gap-2 px-4 py-2 rounded-full bg-sky-50 text-sky-600 text-[13px] font-bold press">
+                    <span class="text-[11px] bg-sky-500 text-white px-1.5 rounded leading-tight">AI</span>
+                    <span data-i18n="settings_label">设置</span>
+                    <iconify-icon icon="lucide:chevron-right"></iconify-icon>
+                  </a>
+                  <button id="mini-orb-link" onclick="toggleMode(); event.stopPropagation();" class="mini-orb-btn press" aria-label="切换语音与黑板模式" title="切换语音与黑板模式" data-i18n-aria="toggle_mode" data-i18n-title="toggle_mode"></button>
+            </div>
+              </div>
+
+              <div class="flex-1 p-6 overflow-y-auto bg-gradient-to-b from-white to-sky-50/10">
+                <div id="chat-message-list" class="chat-message-list"></div>
+                <div id="chat-empty-hint" class="py-8 text-center text-sm text-slate-400" data-i18n="chat_empty_hint">
+                  输入文字或点击麦克风开始对话
+                </div>
+              </div>
+
+              <div class="p-6 space-y-4">
+                <div class="relative flex items-center">
+                  <textarea id="chat-text-input" onclick="event.stopPropagation()" rows="1" placeholder="输入文本与AI对话..." data-i18n-placeholder="chat_placeholder"
+                    class="w-full pl-6 pr-16 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-sky-500/20 resize-none overflow-hidden"></textarea>
+                  <button id="chat-voice-btn" type="button" class="absolute right-4 h-11 w-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-sky-500 transition-colors" data-i18n-aria="voice_mic_idle" data-i18n-title="voice_mic_idle">
+                    <iconify-icon icon="lucide:mic" class="text-2xl"></iconify-icon>
+                  </button>
+            </div>
+                <div class="flex gap-4">
+                  <button id="chat-send-btn" class="flex-1 bg-sky-100/80 text-sky-600 py-3.5 rounded-2xl font-bold text-base hover:bg-sky-100 transition-colors" data-i18n="send_btn">发送</button>
+                </div>
+                <button id="voice-chat-btn" class="w-full bg-sky-500 text-white py-3.5 rounded-2xl font-bold text-base shadow-xl shadow-sky-200 active:scale-[0.98] transition-all hover:bg-sky-600" data-i18n="voice_chat_btn">
+                  实时语音聊天
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Time Display (Initial state) -->
+          <div id="time-display" class="mt-10 flex flex-col items-center gap-3 text-slate-600 transition-all duration-500">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl font-bold" data-i18n="time_left">剩余 4:00</span>
+              <iconify-icon icon="lucide:info" class="text-slate-400 text-xl"></iconify-icon>
+            </div>
+            <p class="text-sm text-slate-400 font-medium tracking-wide animate-pulse" data-i18n="orb_hint">点击球体进入沉浸学习模式</p>
+          </div>
+        </section>
+
+        <div id="drag-overlay" class="drag-overlay" aria-hidden="true">
+          <div class="drop-zone drop-left" data-zone="left"></div>
+          <div class="drop-zone drop-right" data-zone="right"></div>
+          <div class="drop-zone drop-top" data-zone="top"></div>
+          <div class="drop-zone drop-bottom" data-zone="bottom"></div>
+            </div>
+          </div>
+    </main>
+
+    <!-- Bottom Controls -->
+    <section id="bottom-bar" class="fixed bottom-0 left-0 right-0 z-[60] transition-transform duration-700">
+      <div class="mx-auto max-w-md px-6 pb-12 pt-6">
+        <div class="flex items-center justify-center gap-8">
+          <button class="group inline-flex h-16 w-16 items-center justify-center rounded-full bg-white ring-1 ring-slate-200 shadow-lg hover:shadow-xl transition-all press">
+            <iconify-icon icon="lucide:mic" class="text-[24px] text-slate-700"></iconify-icon>
+          </button>
+          <a id="end-call-btn" href="#" class="group inline-flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 ring-1 ring-rose-200 shadow-lg hover:bg-rose-500 hover:text-white transition-all press">
+            <iconify-icon icon="lucide:phone-off" class="text-[26px]"></iconify-icon>
+          </a>
+          <button class="group inline-flex h-16 w-16 items-center justify-center rounded-full bg-white ring-1 ring-slate-200 shadow-lg hover:shadow-xl transition-all press">
+            <iconify-icon icon="lucide:message-square" class="text-[24px] text-slate-700"></iconify-icon>
+          </button>
+            </div>
+          </div>
+    </section>
+  </div>
+
+  <script>
+    const LANG_STORAGE_KEY = 'ui-language';
+    const VOICE_I18N = {
+      'zh-CN': {
+        page_title: 'Linguify AI - 语音学习',
+        nav_back: '返回',
+        status_calling: '正在通话',
+        board_title: '讲述内容',
+        board_desc: '你好同学！今天想学些什么呢？',
+        drag_handle: '拖拽布局',
+        split_hint: '提示：再次点击右侧球体可收起分屏。',
+        chat_title: '实时对话',
+        chat_subtitle: '文字与语音在同一对话中交互',
+        settings_label: '设置',
+        toggle_mode: '切换语音与黑板模式',
+        chat_empty_hint: '输入文字或点击麦克风开始对话',
+        chat_placeholder: '输入文本与AI对话...',
+        send_btn: '发送',
+        voice_chat_btn: '实时语音聊天',
+        voice_chat_btn_listening: '正在聆听... 点击停止',
+        voice_mic_idle: '语音输入',
+        voice_mic_listening: '正在听你说话，点击停止',
+        time_left: '剩余 4:00',
+        orb_hint: '点击球体进入沉浸学习模式',
+        board_update_confirm: '检测到你在修改学习结构，是否更新黑板？',
+        board_update_done: '黑板结构已更新。',
+        board_create_fail: '黑板生成失败，请稍后重试。',
+        board_update_fail: '黑板更新失败，请稍后重试。',
+        board_status_teaching: '讲解中',
+        board_status_pending: '待学习',
+        board_status_done: '已完成',
+        board_status_skipped: '已跳过',
+        bb_save_selection: '收藏选中',
+        bb_save_selection_empty: '请先在黑板中选中要收藏的内容。',
+        bb_save_selection_ok: '已收藏到重点笔记本。',
+        bb_save_selection_dup: '该内容已在重点笔记本中。'
+      },
+      'en': {
+        page_title: 'Linguify AI - Voice Learning',
+        nav_back: 'Back',
+        status_calling: 'In Call',
+        board_title: 'Narration Board',
+        board_desc: 'Hi there! What would you like to learn today?',
+        drag_handle: 'Drag layout',
+        split_hint: 'Tip: Click the orb again to collapse the split view.',
+        chat_title: 'Live Dialogue',
+        chat_subtitle: 'Text and voice share one conversation',
+        settings_label: 'Settings',
+        toggle_mode: 'Toggle voice and board mode',
+        chat_empty_hint: 'Type or tap mic to start chatting',
+        chat_placeholder: 'Type a message to chat with the AI...',
+        send_btn: 'Send',
+        voice_chat_btn: 'Live Voice Chat',
+        voice_chat_btn_listening: 'Listening... Tap to stop',
+        voice_mic_idle: 'Voice input',
+        voice_mic_listening: 'Listening, tap to stop',
+        time_left: 'Time left 4:00',
+        orb_hint: 'Tap the orb to enter immersive learning',
+        board_update_confirm: 'Detected a structural request. Update blackboard now?',
+        board_update_done: 'Blackboard updated.',
+        board_create_fail: 'Failed to create board. Please retry.',
+        board_update_fail: 'Failed to update board. Please retry.',
+        board_status_teaching: 'Teaching',
+        board_status_pending: 'Pending',
+        board_status_done: 'Done',
+        board_status_skipped: 'Skipped',
+        bb_save_selection: 'Save selection',
+        bb_save_selection_empty: 'Select some blackboard text to save first.',
+        bb_save_selection_ok: 'Saved to the notebook.',
+        bb_save_selection_dup: 'This selection is already in your notebook.'
+      }
+    };
+
+    const voiceLang = localStorage.getItem(LANG_STORAGE_KEY) || 'zh-CN';
+    const voiceT = (key) => {
+      const dict = VOICE_I18N[voiceLang] || VOICE_I18N['zh-CN'];
+      return dict[key] || VOICE_I18N['zh-CN'][key] || '';
+    };
+
+    function normalizeBaseUrl(url) {
+      return (url || '').toString().trim().replace(/\/+$/, '');
+    }
+
+    function toWsUrl(httpUrl) {
+      const clean = normalizeBaseUrl(httpUrl);
+      if (!clean) return '';
+      return clean.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+    }
+
+    const DEFAULT_API_BASE = 'http://127.0.0.1:3002';
+    const DEFAULT_WS_URL = 'ws://127.0.0.1:3002';
+
+    let BOARD_API_BASE = normalizeBaseUrl(localStorage.getItem('blackboard-api-base')) || DEFAULT_API_BASE;
+    let BOARD_WS_URL = normalizeBaseUrl(localStorage.getItem('blackboard-ws-url')) || toWsUrl(BOARD_API_BASE) || DEFAULT_WS_URL;
+
+    function persistBackendEndpoints() {
+      try {
+        localStorage.setItem('blackboard-api-base', BOARD_API_BASE);
+        localStorage.setItem('blackboard-ws-url', BOARD_WS_URL);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function siblingEndpoint(url, targetHost) {
+      const clean = normalizeBaseUrl(url);
+      if (!clean) return '';
+      try {
+        const parsed = new URL(clean);
+        parsed.hostname = targetHost;
+        return normalizeBaseUrl(parsed.toString());
+      } catch (e) {
+        // fallback for non-URL strings
+        return clean.replace('localhost', targetHost).replace('127.0.0.1', targetHost);
+      }
+    }
+
+    async function probeHealth(apiBase) {
+      const base = normalizeBaseUrl(apiBase);
+      if (!base) return false;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1200);
+      try {
+        const resp = await fetch(`${base}/health`, { signal: controller.signal });
+        return resp.ok;
+      } catch (e) {
+        return false;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    async function ensureBackendReachable() {
+      // 先探测当前配置；不通则在 localhost <-> 127.0.0.1 间自动切换
+      const currentOk = await probeHealth(BOARD_API_BASE);
+      if (currentOk) {
+        persistBackendEndpoints();
+        return true;
+      }
+
+      const currentHost = (() => {
+        try { return new URL(BOARD_API_BASE).hostname; } catch (e) { return ''; }
+      })();
+      const fallbackHost = currentHost === 'localhost' ? '127.0.0.1' : 'localhost';
+      const fallbackApi = siblingEndpoint(BOARD_API_BASE || DEFAULT_API_BASE, fallbackHost) || (fallbackHost === 'localhost' ? 'http://localhost:3002' : DEFAULT_API_BASE);
+      const fallbackOk = await probeHealth(fallbackApi);
+      if (fallbackOk) {
+        BOARD_API_BASE = normalizeBaseUrl(fallbackApi);
+        BOARD_WS_URL = normalizeBaseUrl(toWsUrl(BOARD_API_BASE)) || DEFAULT_WS_URL;
+        persistBackendEndpoints();
+        return true;
+      }
+
+      // 两边都不通：保持现状
+      return false;
+    }
+    const LESSONS_KEY = 'linguify-lessons';
+    const SESSION_ARCHIVE_KEY = 'linguify-session-archive';
+    const NOTEBOOK_STORAGE_KEY = 'linguify-notebook';
+    const NOTEBOOK_MAX_ITEMS = 300;
+
+    const boardState = {
+      board: null,
+      ws: null,
+      creatingBoard: false,
+      updatingBoard: false
+    };
+
+    const boardEditor = {
+      editing: false,
+      saving: false,
+      nodeId: ''
+    };
+
+    const sessionRuntime = {
+      recordId: `record-${Date.now()}`,
+      startedAt: new Date().toISOString(),
+      messages: [],
+      boardChanges: [],
+      hasActivity: false,
+      replayLoaded: false,
+      saved: false,
+      aiDeltaBuffer: '',
+      aiDoneText: '',
+      aiTextChannel: ''
+    };
+
+    function applyVoiceTranslations() {
+      document.documentElement.lang = voiceLang === 'en' ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        el.textContent = voiceT(key);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        el.setAttribute('placeholder', voiceT(key));
+      });
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        const key = el.dataset.i18nAria;
+        el.setAttribute('aria-label', voiceT(key));
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.dataset.i18nTitle;
+        el.setAttribute('title', voiceT(key));
+      });
+      document.title = voiceT('page_title');
+    }
+
+    applyVoiceTranslations();
+
+    function handleBackClick(event) {
+      const wrapper = document.getElementById('main-wrapper');
+      if (wrapper.classList.contains('is-split')) {
+        event.preventDefault();
+        toggleMode();
+        return;
+      }
+      event.preventDefault();
+      if (realtimeVoice.recording) {
+        try { forceStopOpenAIRealtimeVoiceCall(); } catch (e) { /* ignore */ }
+      }
+      persistSessionToRecords('back');
+      window.location.href = 'ai语言学习平台-主页.html';
+    }
+
+    function handleOrbClick(event) {
+      const wrapper = document.getElementById('main-wrapper');
+      if (!wrapper.classList.contains('is-split')) {
+        toggleMode();
+      }
+    }
+
+    const layoutState = {
+      axis: 'row',
+      chatFirst: false
+    };
+
+    function applyLayout(axis, chatFirst) {
+      const grid = document.getElementById('content-grid');
+      if (!grid) return;
+      grid.classList.toggle('layout-row', axis === 'row');
+      grid.classList.toggle('layout-col', axis === 'col');
+      grid.classList.toggle('chat-first', !!chatFirst);
+      layoutState.axis = axis;
+      layoutState.chatFirst = !!chatFirst;
+    }
+
+    function layoutFromZone(zone) {
+      if (zone === 'left') {
+        applyLayout('row', true);
+      } else if (zone === 'right') {
+        applyLayout('row', false);
+      } else if (zone === 'top') {
+        applyLayout('col', true);
+      } else if (zone === 'bottom') {
+        applyLayout('col', false);
+      }
+    }
+
+    function initDragLayout() {
+      const grid = document.getElementById('content-grid');
+      const overlay = document.getElementById('drag-overlay');
+      const wrapper = document.getElementById('main-wrapper');
+      if (!grid || !overlay || !wrapper) return;
+
+      const zones = Array.from(overlay.querySelectorAll('[data-zone]'));
+      const handles = Array.from(document.querySelectorAll('[data-drag-handle]'));
+      let dragging = false;
+      let activeZone = null;
+
+      const setActiveZone = (zone) => {
+        activeZone = zone;
+        zones.forEach(el => {
+          el.classList.toggle('is-active', el.dataset.zone === zone);
+        });
+      };
+
+      const startDrag = (event) => {
+        if (!wrapper.classList.contains('is-split')) return;
+        dragging = true;
+        overlay.classList.add('active');
+        document.body.style.cursor = 'grabbing';
+        setActiveZone(null);
+        event.preventDefault();
+      };
+
+      const moveDrag = (event) => {
+        if (!dragging) return;
+        const rect = grid.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+          setActiveZone(null);
+          return;
+        }
+        const leftEdge = rect.width * 0.33;
+        const rightEdge = rect.width * 0.67;
+        const topEdge = rect.height * 0.33;
+        const bottomEdge = rect.height * 0.67;
+
+        if (x < leftEdge) {
+          setActiveZone('left');
+        } else if (x > rightEdge) {
+          setActiveZone('right');
+        } else if (y < topEdge) {
+          setActiveZone('top');
+        } else if (y > bottomEdge) {
+          setActiveZone('bottom');
+        } else {
+          setActiveZone(null);
+        }
+      };
+
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        overlay.classList.remove('active');
+        document.body.style.cursor = '';
+        if (activeZone) {
+          layoutFromZone(activeZone);
+        }
+        setActiveZone(null);
+      };
+
+      handles.forEach(handle => {
+        handle.addEventListener('pointerdown', (event) => {
+          event.stopPropagation();
+          startDrag(event);
+        });
+      });
+
+      document.addEventListener('pointermove', moveDrag);
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
+    }
+
+    function toggleMode() {
+      const wrapper = document.getElementById('main-wrapper');
+      const bottomBar = document.getElementById('bottom-bar');
+      
+      const isSplit = wrapper.classList.contains('is-split');
+
+      if (!isSplit) {
+        wrapper.classList.add('is-split');
+        applyLayout(layoutState.axis, layoutState.chatFirst);
+        bottomBar.style.transform = 'translateY(150px)';
+            } else {
+        wrapper.classList.remove('is-split');
+        setTimeout(() => {
+           bottomBar.style.transform = 'translateY(0)';
+        }, 600);
+      }
+    }
+
+    applyLayout(layoutState.axis, layoutState.chatFirst);
+    initDragLayout();
+
+    function getStatusText(status) {
+      if (!status) return '';
+      return voiceT(`board_status_${status}`) || status;
+    }
+
+    function normalizeBoardText(text) {
+      return (text || '').toString().replace(/\r\n?/g, '\n');
+    }
+
+    function formatMathForDisplay(text) {
+      if (!text) return '';
+      let t = (text || '').toString();
+
+      // Strip LaTeX wrappers
+      t = t.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+      t = t.replace(/\$([^$]+)\$/g, '$1');
+      t = t.replace(/\\\(([\s\S]*?)\\\)/g, '$1');
+      t = t.replace(/\\\[([\s\S]*?)\\\]/g, '$1');
+
+      // Basic structures
+      t = t.replace(/\\d?frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '$1/$2');
+      t = t.replace(/\\sqrt\s*\{([^{}]+)\}/g, '√($1)');
+      t = t.replace(/\^\{([^{}]+)\}/g, '^$1');
+      t = t.replace(/_\{([^{}]+)\}/g, '_$1');
+      t = t.replace(/\^2/g, '²').replace(/\^3/g, '³');
+
+      // Common symbols
+      const replacements = [
+        [/\\times/g, '×'],
+        [/\\cdot/g, '·'],
+        [/\\div/g, '÷'],
+        [/\\leq/g, '≤'],
+        [/\\geq/g, '≥'],
+        [/\\neq/g, '≠'],
+        [/\\approx/g, '≈'],
+        [/\\infty/g, '∞'],
+        [/\\pi/g, 'π'],
+        [/\\theta/g, 'θ'],
+        [/\\alpha/g, 'α'],
+        [/\\beta/g, 'β'],
+        [/\\gamma/g, 'γ'],
+        [/\\sum/g, '∑'],
+        [/\\int/g, '∫'],
+        [/\\to/g, '→'],
+        [/\\Rightarrow/g, '⇒'],
+        [/\\Leftarrow/g, '⇐'],
+        [/\\leftrightarrow/g, '↔'],
+        [/\\left/g, ''],
+        [/\\right/g, '']
+      ];
+      replacements.forEach(([pattern, value]) => {
+        t = t.replace(pattern, value);
+      });
+
+      return t;
+    }
+
+    function prettifyBoardText(text) {
+      let t = formatMathForDisplay(normalizeBoardText(text)).trim();
+      if (!t) return '';
+      // 避免对代码块/结构化内容做过强格式化
+      if (t.includes('```')) return t;
+
+      // 中文冒号后换行（更像板书排版）
+      t = t.replace(/：\s*(?!\n)/g, '：\n');
+
+      // 数字编号列表换行（避免一整段挤在一行）
+      // 例："...。 2. ..." -> "...。\n\n2. ..."
+      t = t.replace(/([^\n])\s+(\d{1,2})[.)]\s+/g, '$1\n\n$2. ');
+
+      // 过多空行收敛为两行
+      t = t.replace(/\n{3,}/g, '\n\n');
+      return t;
+    }
+
+    function truncateTitle(text, maxLen) {
+      const safe = (text || '').toString().trim();
+      if (!safe) return '';
+      if (safe.length <= maxLen) return safe;
+      return `${safe.slice(0, maxLen).replace(/[，。！？,.\s·]+$/g, '')}…`;
+    }
+
+    function formatBoardTitle(goalText, maxLenOverride) {
+      const raw = (goalText || '').toString().trim();
+      if (!raw) return '';
+      const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+      let base = lines.find(line => /学习目标[:：]/.test(line)) || lines[0] || raw;
+      base = base.replace(/^学习目标[:：]\s*/i, '').replace(/^Goal[:：]\s*/i, '').trim();
+      base = base.replace(/当前水平[:：].*$/i, '').trim();
+
+      const langMatch = base.match(/(英语|日语|法语|德语|西班牙语|韩语|中文|俄语)/);
+      const levelMatch = base.match(/\b(A1|A2|B1|B2|C1|C2)\b/i);
+      const grammarMatch = base.match(/(过去将来时|过去完成时|过去完成进行时|现在完成时|条件句|虚拟式|被动语态|从句|时态)/);
+
+      let scenario = '';
+      const scenarioPatterns = [
+        /在(.+?)(?:的)?场景(对话|会话|练习|交流)/,
+        /(.+?)情景对话/,
+        /(.+?)场景对话/
+      ];
+      for (const pattern of scenarioPatterns) {
+        const match = base.match(pattern);
+        if (match && match[1]) {
+          scenario = match[1].trim();
+          if (match[2]) scenario = `${scenario}${match[2]}`;
+          break;
+        }
+      }
+      if (!scenario && /对话|会话/.test(base)) {
+        const match = base.match(/(.+?)对话/);
+        if (match && match[1]) scenario = `${match[1].trim()}对话`;
+      }
+
+      const parts = [];
+      if (langMatch && levelMatch) {
+        parts.push(`${langMatch[1]}${levelMatch[1].toUpperCase()}`);
+      } else if (langMatch) {
+        parts.push(langMatch[1]);
+      } else if (levelMatch) {
+        parts.push(levelMatch[1].toUpperCase());
+      }
+      if (scenario) parts.push(scenario);
+      if (grammarMatch) parts.push(grammarMatch[1]);
+
+      let title = parts.join(' · ').trim();
+      if (!title) title = base;
+      title = title
+        .replace(/(我的|我要|我想|请|帮我|生成|写|一篇|一段|一份|一个|给我)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const maxLen = Number.isFinite(maxLenOverride)
+        ? Number(maxLenOverride)
+        : (voiceLang === 'en' ? 42 : 16);
+      return truncateTitle(title, maxLen);
+    }
+
+    function setCurrentNode(nodeId) {
+      if (!boardState.board || !nodeId) return;
+      if (boardEditor.editing && boardEditor.nodeId && boardEditor.nodeId !== nodeId) {
+        // 编辑中不允许自动切换节点，避免覆盖未保存内容
+        return;
+      }
+      boardState.board.progress = boardState.board.progress || {};
+      boardState.board.progress.current_node_id = nodeId;
+      if (Array.isArray(boardState.board.outline)) {
+        boardState.board.outline.forEach(node => {
+          if (node.id === nodeId) {
+            if (node.status === 'pending') node.status = 'teaching';
+          } else if (node.status === 'teaching') {
+            node.status = 'done';
+          }
+        });
+      }
+      const outlineEl = document.getElementById('blackboard-outline');
+      if (!outlineEl) return;
+      outlineEl.querySelectorAll('.board-outline-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.nodeId === nodeId);
+      });
+      if (!boardEditor.editing) {
+        renderCurrentNodeContent();
+      }
+      markSessionActivity();
+    }
+
+    function renderCurrentNodeContent() {
+      const headingEl = document.getElementById('blackboard-node-heading');
+      const contentEl = document.getElementById('blackboard-node-content');
+      const examplesEl = document.getElementById('blackboard-node-examples');
+      if (!headingEl || !contentEl || !examplesEl) return;
+
+      const board = boardState.board;
+      const outline = Array.isArray(board?.outline) ? board.outline : [];
+      const nodes = board?.nodes && typeof board.nodes === 'object' ? board.nodes : {};
+      const nodeId = board?.progress?.current_node_id || outline[0]?.id || '';
+      const outlineNode = outline.find(n => n.id === nodeId) || outline[0] || null;
+      const nodeData = nodeId && nodes[nodeId] && typeof nodes[nodeId] === 'object' ? nodes[nodeId] : {};
+      const isEditing = boardEditor.editing && boardEditor.nodeId === nodeId;
+
+      if (!outlineNode) {
+        headingEl.textContent = voiceLang === 'en' ? 'Blackboard content' : '板书内容';
+        contentEl.textContent = voiceLang === 'en'
+          ? 'No blackboard yet. Start the realtime chat to clarify your topic and level, then generate a board.'
+          : '尚未生成板书。你可以先开启实时语音聊天，澄清“学什么 + 当前水平”，再点击 ✓ 生成。';
+        examplesEl.innerHTML = '';
+        contentEl.removeAttribute('contenteditable');
+        contentEl.classList.remove('outline', 'outline-2', 'outline-sky-400/40', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+        updateBoardEditorControls();
+        return;
+      }
+
+      headingEl.textContent = `${outlineNode.id}. ${outlineNode.title || ''}`.trim();
+      if (!isEditing) {
+        const content = (nodeData?.content || '').toString().trim();
+        const pretty = prettifyBoardText(content);
+        contentEl.textContent = pretty || content || (voiceLang === 'en'
+          ? 'No content for this node yet.'
+          : '该节点暂无正文内容。');
+      }
+
+      examplesEl.innerHTML = '';
+      const examples = Array.isArray(nodeData?.examples) ? nodeData.examples : [];
+      const list = examples.slice(0, 30);
+      if (list.length) {
+        list.forEach((example, index) => {
+          const wrapper = document.createElement('div');
+          wrapper.className = isEditing
+            ? 'flex items-start gap-2'
+            : '';
+
+          if (isEditing) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'mt-1 h-7 w-7 rounded-lg bg-rose-500/15 text-rose-200 border border-rose-500/30 press hover:bg-rose-500/25';
+            removeBtn.textContent = '✕';
+            removeBtn.addEventListener('click', (event) => {
+              event.stopPropagation();
+              wrapper.remove();
+            });
+            wrapper.appendChild(removeBtn);
+          }
+
+          const item = document.createElement('div');
+          item.className = isEditing
+            ? 'flex-1 px-4 py-3 rounded-xl bg-slate-900/30 border border-slate-700/40 text-slate-100 text-sm whitespace-pre-wrap outline outline-2 outline-sky-400/0 focus:outline-none focus-visible:outline-sky-400/40'
+            : 'px-4 py-3 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-sm whitespace-pre-wrap';
+          item.textContent = formatMathForDisplay((example || '').toString());
+          if (isEditing) {
+            item.setAttribute('contenteditable', 'plaintext-only');
+            item.dataset.bbExampleItem = '1';
+            item.dataset.bbExampleIndex = String(index);
+          }
+
+          wrapper.appendChild(item);
+          examplesEl.appendChild(wrapper);
+        });
+      }
+
+      if (isEditing) {
+        contentEl.setAttribute('contenteditable', 'plaintext-only');
+        contentEl.classList.add('outline', 'outline-2', 'outline-sky-400/0', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+      } else {
+        contentEl.removeAttribute('contenteditable');
+        contentEl.classList.remove('outline', 'outline-2', 'outline-sky-400/0', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+      }
+
+      updateBoardEditorControls();
+      updateSaveSelectionButtonState();
+    }
+
+    function updateBoardEditorControls() {
+      const editBtn = document.getElementById('bb-edit-btn');
+      const saveBtn = document.getElementById('bb-save-btn');
+      const cancelBtn = document.getElementById('bb-cancel-btn');
+      const addExampleBtn = document.getElementById('bb-add-example-btn');
+
+      const canEdit = !!boardState.board && !!(boardState.board?.board_id);
+
+      if (editBtn) {
+        editBtn.disabled = !canEdit || boardEditor.editing || boardEditor.saving;
+        editBtn.classList.toggle('opacity-60', editBtn.disabled);
+        editBtn.classList.toggle('cursor-not-allowed', editBtn.disabled);
+      }
+
+      const showEdit = !boardEditor.editing;
+      const showSaveCancel = boardEditor.editing;
+
+      if (saveBtn) saveBtn.classList.toggle('hidden', !showSaveCancel);
+      if (cancelBtn) cancelBtn.classList.toggle('hidden', !showSaveCancel);
+      if (editBtn) editBtn.classList.toggle('hidden', !showEdit);
+      if (addExampleBtn) addExampleBtn.classList.toggle('hidden', !showSaveCancel);
+
+      if (saveBtn) {
+        saveBtn.disabled = boardEditor.saving;
+        saveBtn.classList.toggle('opacity-60', saveBtn.disabled);
+        saveBtn.classList.toggle('cursor-not-allowed', saveBtn.disabled);
+      }
+      if (cancelBtn) {
+        cancelBtn.disabled = boardEditor.saving;
+        cancelBtn.classList.toggle('opacity-60', cancelBtn.disabled);
+        cancelBtn.classList.toggle('cursor-not-allowed', cancelBtn.disabled);
+      }
+      if (addExampleBtn) {
+        addExampleBtn.disabled = boardEditor.saving;
+        addExampleBtn.classList.toggle('opacity-60', addExampleBtn.disabled);
+        addExampleBtn.classList.toggle('cursor-not-allowed', addExampleBtn.disabled);
+      }
+    }
+
+    function resolveSelectionContainer(node) {
+      const el = node?.nodeType === 1 ? node : node?.parentElement;
+      if (!el) return null;
+      return el.closest('#blackboard-node-content, #blackboard-node-examples');
+    }
+
+    function getBlackboardSelection() {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) return null;
+      const text = (selection.toString() || '').trim();
+      if (!text) return null;
+      const anchorContainer = resolveSelectionContainer(selection.anchorNode);
+      const focusContainer = resolveSelectionContainer(selection.focusNode);
+      if (!anchorContainer || !focusContainer) return null;
+      const source = (anchorContainer.id === 'blackboard-node-examples' || focusContainer.id === 'blackboard-node-examples')
+        ? 'examples'
+        : 'content';
+      return { text, source };
+    }
+
+    function buildNotebookItem(text, source) {
+      const board = boardState.board;
+      const outline = Array.isArray(board?.outline) ? board.outline : [];
+      const nodeId = board?.progress?.current_node_id || outline[0]?.id || '';
+      const outlineNode = outline.find(n => n.id === nodeId) || outline[0] || null;
+      const boardTitle = (board?.goal || voiceT('board_desc') || '').toString().trim();
+      return {
+        id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        text,
+        source,
+        board_id: board?.board_id || '',
+        board_title: boardTitle,
+        node_id: nodeId,
+        node_title: outlineNode?.title || '',
+        created_at: new Date().toISOString(),
+        language: voiceLang
+      };
+    }
+
+    function updateSaveSelectionButtonState() {
+      const btn = document.getElementById('bb-save-selection-btn');
+      if (!btn) return;
+      const selection = getBlackboardSelection();
+      const disabled = !selection || !selection.text;
+      btn.disabled = disabled;
+      btn.classList.toggle('opacity-60', disabled);
+      btn.classList.toggle('cursor-not-allowed', disabled);
+    }
+
+    function saveBlackboardSelectionToNotebook() {
+      const selection = getBlackboardSelection();
+      if (!selection) {
+        window.alert(voiceT('bb_save_selection_empty'));
+        return;
+      }
+      const text = selection.text.trim();
+      if (!text) {
+        window.alert(voiceT('bb_save_selection_empty'));
+        return;
+      }
+
+      const items = loadNotebookItems();
+      const nodeId = boardState.board?.progress?.current_node_id || '';
+      const boardId = boardState.board?.board_id || '';
+      const isDuplicate = items.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        if ((item.text || '').toString().trim() !== text) return false;
+        if ((item.board_id || '') !== boardId) return false;
+        if ((item.node_id || '') !== nodeId) return false;
+        return true;
+      });
+
+      if (isDuplicate) {
+        window.alert(voiceT('bb_save_selection_dup'));
+        return;
+      }
+
+      saveNotebookItems([buildNotebookItem(text, selection.source), ...items]);
+      try { window.getSelection()?.removeAllRanges?.(); } catch (e) { /* ignore */ }
+      updateSaveSelectionButtonState();
+      window.alert(voiceT('bb_save_selection_ok'));
+    }
+
+    function beginBlackboardEdit() {
+      if (!boardState.board) return;
+      const outline = Array.isArray(boardState.board?.outline) ? boardState.board.outline : [];
+      const nodeId = (boardState.board?.progress?.current_node_id || outline[0]?.id || '').toString();
+      if (!nodeId) return;
+      boardEditor.editing = true;
+      boardEditor.nodeId = nodeId;
+      updateBoardEditorControls();
+      renderCurrentNodeContent();
+      // 聚焦正文编辑区
+      const contentEl = document.getElementById('blackboard-node-content');
+      try { contentEl?.focus?.(); } catch (e) { /* ignore */ }
+    }
+
+    function cancelBlackboardEdit() {
+      boardEditor.editing = false;
+      boardEditor.saving = false;
+      boardEditor.nodeId = '';
+      updateBoardEditorControls();
+      renderCurrentNodeContent();
+    }
+
+    function collectBlackboardDraft() {
+      const contentEl = document.getElementById('blackboard-node-content');
+      const examplesEl = document.getElementById('blackboard-node-examples');
+      const content = (contentEl?.innerText || '').toString().trim();
+      const exampleItems = examplesEl
+        ? Array.from(examplesEl.querySelectorAll('[data-bb-example-item]'))
+        : [];
+      const examples = exampleItems
+        .map(el => (el?.innerText || '').toString().trim())
+        .filter(Boolean)
+        .slice(0, 30);
+      return { content, examples };
+    }
+
+    async function persistUserBlackboardEdit(boardId, nodeId, draft) {
+      const response = await fetch(`${BOARD_API_BASE}/user-edit-board`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_id: boardId,
+          node_id: nodeId,
+          content: draft.content,
+          examples: draft.examples,
+          locale: voiceLang
+        })
+      });
+      if (!response.ok) {
+        const message = await readHttpErrorMessage(response, voiceLang === 'en' ? 'Failed to save blackboard.' : '保存板书失败。');
+        throw new Error(message);
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!data.ok || !data.board) {
+        throw new Error(data.message || (voiceLang === 'en' ? 'Failed to save blackboard.' : '保存板书失败。'));
+      }
+      return data.board;
+    }
+
+    async function saveBlackboardEdit() {
+      if (!boardEditor.editing || boardEditor.saving) return;
+      const boardId = boardState.board?.board_id;
+      const nodeId = boardEditor.nodeId;
+      if (!boardId || !nodeId) return;
+
+      const draft = collectBlackboardDraft();
+      boardEditor.saving = true;
+      updateBoardEditorControls();
+
+      try {
+        const updatedBoard = await persistUserBlackboardEdit(boardId, nodeId, draft);
+        // 记录一次用户编辑（便于课程回放）
+        sessionRuntime.boardChanges.push({
+          ts: new Date().toISOString(),
+          rationale: 'user_edit',
+          operations: [
+            { op: 'update_node', node_id: nodeId, content: draft.content }
+          ]
+        });
+
+        boardEditor.editing = false;
+        boardEditor.saving = false;
+        boardEditor.nodeId = '';
+        renderBoard(updatedBoard);
+        await bindBoardContextToVoice();
+      } catch (e) {
+        console.error('保存板书失败:', e);
+        window.alert(e?.message || (voiceLang === 'en' ? 'Failed to save blackboard.' : '保存板书失败。'));
+        boardEditor.saving = false;
+      } finally {
+        updateBoardEditorControls();
+      }
+    }
+
+    function addBlackboardExampleItem() {
+      if (!boardEditor.editing) return;
+      const examplesEl = document.getElementById('blackboard-node-examples');
+      if (!examplesEl) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-start gap-2';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'mt-1 h-7 w-7 rounded-lg bg-rose-500/15 text-rose-200 border border-rose-500/30 press hover:bg-rose-500/25';
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        wrapper.remove();
+      });
+
+      const item = document.createElement('div');
+      item.className = 'flex-1 px-4 py-3 rounded-xl bg-slate-900/30 border border-slate-700/40 text-slate-100 text-sm whitespace-pre-wrap outline outline-2 outline-sky-400/0 focus:outline-none focus-visible:outline-sky-400/40';
+      item.setAttribute('contenteditable', 'plaintext-only');
+      item.dataset.bbExampleItem = '1';
+      item.textContent = voiceLang === 'en' ? 'New example...' : '在这里输入新的示例/对话...';
+
+      wrapper.appendChild(removeBtn);
+      wrapper.appendChild(item);
+      examplesEl.appendChild(wrapper);
+
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(item);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        item.focus();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function renderBoardOutline(board) {
+      const outlineEl = document.getElementById('blackboard-outline');
+      if (!outlineEl) return;
+      outlineEl.innerHTML = '';
+      const list = Array.isArray(board?.outline) ? board.outline : [];
+      if (!list.length) {
+        renderCurrentNodeContent();
+        return;
+      }
+
+      list.forEach(node => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'board-outline-item w-full text-left inline-flex items-center';
+        row.dataset.nodeId = node.id;
+        row.innerHTML = `
+          <span class="node-id">${node.id}</span>
+          <span class="node-title">${node.title}</span>
+          <span class="node-status">${getStatusText(node.status)}</span>
+        `;
+        row.addEventListener('click', () => {
+          if (boardEditor.editing && boardEditor.nodeId && boardEditor.nodeId !== node.id) {
+            window.alert(voiceLang === 'en'
+              ? 'Please save or cancel editing before switching nodes.'
+              : '你正在编辑板书，请先保存或取消后再切换节点。');
+            return;
+          }
+          setCurrentNode(node.id);
+          if (boardState.ws && boardState.ws.readyState === WebSocket.OPEN) {
+            boardState.ws.send(JSON.stringify({
+              type: 'set_current_node',
+              board_id: boardState.board?.board_id,
+              node_id: node.id
+            }));
+          }
+        });
+        outlineEl.appendChild(row);
+      });
+      setCurrentNode(board?.progress?.current_node_id || list[0]?.id);
+    }
+
+    function renderBoard(board) {
+      if (!board) return;
+      boardState.board = board;
+      const titleEl = document.getElementById('blackboard-title');
+      const tagsEl = document.getElementById('blackboard-tags');
+      if (titleEl) {
+        const shortTitle = formatBoardTitle(board.goal);
+        titleEl.textContent = shortTitle || board.goal || voiceT('board_desc');
+      }
+      if (tagsEl) {
+        tagsEl.innerHTML = '';
+        (board.outline || []).slice(0, 4).forEach(node => {
+          const item = document.createElement('div');
+          item.className = 'flex items-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-base';
+          item.innerHTML = `<span>${node.id}. ${node.title}</span>`;
+          tagsEl.appendChild(item);
+        });
+      }
+      renderBoardOutline(board);
+    }
+
+    function markSessionActivity() {
+      sessionRuntime.hasActivity = true;
+    }
+
+    function normalizeMessageRole(role) {
+      if (role === 'assistant' || role === 'user') return role;
+      return 'system';
+    }
+
+    function renderChatMessages() {
+      const listEl = document.getElementById('chat-message-list');
+      const emptyHintEl = document.getElementById('chat-empty-hint');
+      if (!listEl) return;
+
+      const messages = Array.isArray(sessionRuntime.messages)
+        ? sessionRuntime.messages.slice(-160)
+        : [];
+
+      listEl.innerHTML = '';
+
+      const renderTextBubble = (role, text) => {
+        const row = document.createElement('div');
+        row.className = `chat-msg-row ${role}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-msg-bubble';
+        const displayText = role === 'assistant' ? formatMathForDisplay(text) : text;
+        bubble.textContent = displayText;
+        row.appendChild(bubble);
+        listEl.appendChild(row);
+      };
+
+      const renderActionCard = (msg) => {
+        const role = normalizeMessageRole(msg?.role);
+        const card = msg?.card || {};
+        const title = (card.title || '').toString().trim();
+        const desc = (card.desc || '').toString().trim();
+        const yesLabel = (card.yesLabel || (voiceLang === 'en' ? 'Yes' : '是')).toString();
+        const noLabel = (card.noLabel || (voiceLang === 'en' ? 'No' : '否')).toString();
+
+        const row = document.createElement('div');
+        row.className = `chat-msg-row ${role}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-msg-bubble';
+        bubble.style.maxWidth = '92%';
+
+        if (msg.resolved) {
+          const summary = (msg.choice === 'yes')
+            ? (voiceLang === 'en' ? 'Selected: Yes' : '已选择：是')
+            : (voiceLang === 'en' ? 'Selected: No' : '已选择：否');
+          bubble.textContent = `${title || (voiceLang === 'en' ? 'Action' : '操作')}\n${summary}`;
+          row.appendChild(bubble);
+          listEl.appendChild(row);
+          return;
+        }
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'text-sm font-bold text-slate-800';
+        titleEl.textContent = title || (voiceLang === 'en' ? 'Confirm' : '请确认');
+
+        const descEl = document.createElement('div');
+        descEl.className = 'mt-1 text-xs text-slate-500 whitespace-pre-wrap';
+        descEl.textContent = desc || '';
+
+        const btnRow = document.createElement('div');
+        btnRow.className = 'mt-3 flex gap-2';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.type = 'button';
+        yesBtn.className = 'flex-1 px-3 py-2 rounded-xl bg-sky-500 text-white text-sm font-bold press disabled:opacity-60 disabled:cursor-not-allowed';
+        yesBtn.textContent = `✓ ${yesLabel}`;
+
+        const noBtn = document.createElement('button');
+        noBtn.type = 'button';
+        noBtn.className = 'flex-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold press disabled:opacity-60 disabled:cursor-not-allowed';
+        noBtn.textContent = `✕ ${noLabel}`;
+
+        const setDisabled = (disabled) => {
+          yesBtn.disabled = disabled;
+          noBtn.disabled = disabled;
+        };
+
+        yesBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          setDisabled(true);
+          try {
+            await handleActionCardDecision(msg, true);
+          } finally {
+            // state updated in handler
+          }
+        });
+
+        noBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          setDisabled(true);
+          try {
+            await handleActionCardDecision(msg, false);
+          } finally {
+            // state updated in handler
+          }
+        });
+
+        btnRow.appendChild(yesBtn);
+        btnRow.appendChild(noBtn);
+
+        bubble.appendChild(titleEl);
+        if (desc) bubble.appendChild(descEl);
+        bubble.appendChild(btnRow);
+
+        row.appendChild(bubble);
+        listEl.appendChild(row);
+      };
+
+      messages.forEach((msg) => {
+        if (msg?.kind === 'action_card' && msg.card) {
+          renderActionCard(msg);
+          return;
+        }
+        const role = normalizeMessageRole(msg?.role);
+        const text = (msg?.text || '').toString().trim();
+        if (!text) return;
+        renderTextBubble(role, text);
+      });
+
+      if (emptyHintEl) {
+        emptyHintEl.classList.toggle('hidden', messages.length > 0);
+      }
+
+      const scroller = listEl.parentElement;
+      if (scroller) {
+        requestAnimationFrame(() => {
+          scroller.scrollTop = scroller.scrollHeight;
+        });
+      }
+    }
+
+    function pushSessionMessage(role, text) {
+      const clean = (text || '').toString().trim();
+      if (!clean) return;
+      sessionRuntime.messages.push({
+        role: normalizeMessageRole(role),
+        text: clean,
+        ts: new Date().toISOString()
+      });
+      if (sessionRuntime.messages.length > 300) {
+        sessionRuntime.messages = sessionRuntime.messages.slice(-300);
+      }
+      markSessionActivity();
+      renderChatMessages();
+    }
+
+    function pushActionCard(card) {
+      if (!card || typeof card !== 'object') return;
+      sessionRuntime.messages.push({
+        role: 'system',
+        kind: 'action_card',
+        card,
+        resolved: false,
+        choice: '',
+        ts: new Date().toISOString()
+      });
+      if (sessionRuntime.messages.length > 300) {
+        sessionRuntime.messages = sessionRuntime.messages.slice(-300);
+      }
+      markSessionActivity();
+      renderChatMessages();
+    }
+
+    function hasUnresolvedActionCard(type) {
+      return sessionRuntime.messages.some((msg) => msg && msg.kind === 'action_card' && msg.card?.type === type && !msg.resolved);
+    }
+
+    function getLatestUnresolvedActionCard(type) {
+      for (let i = sessionRuntime.messages.length - 1; i >= 0; i--) {
+        const msg = sessionRuntime.messages[i];
+        if (msg && msg.kind === 'action_card' && msg.card?.type === type && !msg.resolved) {
+          return msg;
+        }
+      }
+      return null;
+    }
+
+    function isAffirmativeText(text) {
+      const raw = (text || '').toString().trim().toLowerCase();
+      if (!raw) return false;
+      return /^(是|好|好的|可以|行|ok|okay|yes|y|生成|开始|开始生成|继续|继续生成|当然|没问题)[!！。,.?？\s]*$/i.test(raw);
+    }
+
+    function isNegativeText(text) {
+      const raw = (text || '').toString().trim().toLowerCase();
+      if (!raw) return false;
+      return /^(否|不|不要|先不|暂不|等等|等一下|取消|no|n|not\s*yet)[!！。,.?？\s]*$/i.test(raw);
+    }
+
+    async function handleActionCardDecision(msg, accepted) {
+      if (!msg || msg.kind !== 'action_card') return;
+      if (msg.resolved) return;
+      msg.resolved = true;
+      msg.choice = accepted ? 'yes' : 'no';
+      renderChatMessages();
+
+      const card = msg.card || {};
+      const type = (card.type || '').toString();
+
+      if (!accepted) {
+        if (type === 'create_board') {
+          clarifyState.proposalPending = false;
+          clarifyState.lastProposalSignature = (card.signature || clarifyState.lastProposalSignature || '').toString();
+          pushSessionMessage('system', voiceLang === 'en' ? 'Okay. We will keep clarifying.' : '好的，我们继续澄清。你可以继续补充你的学习目标与当前水平。');
+        } else if (type === 'update_board') {
+          pushSessionMessage('system', voiceLang === 'en' ? 'Okay. Board update canceled.' : '已取消更新板书。');
+        }
+        return;
+      }
+
+      if (type === 'create_board') {
+        if (boardState.creatingBoard) return;
+        boardState.creatingBoard = true;
+        clarifyState.proposalPending = false;
+        clarifyState.lastProposalSignature = (card.signature || '').toString() || `${clarifyState.topic}||${clarifyState.level}`;
+        const goalText = (card.goalText || '').toString().trim() || buildGoalTextFromClarify();
+        try {
+          pushSessionMessage('system', voiceLang === 'en' ? 'Generating blackboard...' : '正在生成板书...');
+          const board = await createBoardFromGoal(goalText);
+          renderBoard(board);
+          await bindBoardContextToVoice();
+          // 生成板书后，讲师进入教学阶段，开始围绕黑板讲解
+          const kickoffPrompt = buildTeachingKickoffPrompt(goalText, board);
+          await sendTextByPreferredTransport(kickoffPrompt);
+        } catch (e) {
+          console.error('生成板书失败:', e);
+          window.alert(e?.message || voiceT('board_create_fail'));
+        } finally {
+          boardState.creatingBoard = false;
+        }
+        return;
+      }
+
+      if (type === 'update_board') {
+        const userInput = (card.userInput || '').toString().trim();
+        if (!userInput) return;
+        try {
+          pushSessionMessage('system', voiceLang === 'en' ? 'Updating blackboard...' : '正在更新板书...');
+          const result = await updateBoardByUserInput(userInput);
+          if (result?.board) {
+            renderBoard(result.board);
+            await bindBoardContextToVoice();
+            // 触发讲师继续围绕更新后的黑板讲解
+            const prompt = voiceLang === 'en'
+              ? 'The blackboard has been updated. Continue teaching from the current node, and ask one short check question.'
+              : '黑板已更新。请从当前节点继续讲解，并在本轮末尾给学习者一个简短检查问题。';
+            await sendTextByPreferredTransport(prompt);
+          }
+        } catch (e) {
+          console.error('更新板书失败:', e);
+          window.alert(e?.message || voiceT('board_update_fail'));
+        }
+      }
+    }
+
+    function normalizeDeltaText(evt) {
+      return (evt?.delta || '').toString();
+    }
+
+    function normalizeDoneText(evt) {
+      return (evt?.text || evt?.transcript || '').toString();
+    }
+
+    function shouldAppendDoneText(doneText, currentBuffer) {
+      const done = (doneText || '').toString();
+      if (!done) return false;
+      const buf = (currentBuffer || '').toString();
+      if (!buf) return true;
+      const trimmedBuf = buf.trim();
+      const trimmedDone = done.trim();
+      if (!trimmedDone) return false;
+      // 避免 delta 已经包含完整句子，done 再重复一次
+      if (trimmedBuf === trimmedDone) return false;
+      if (trimmedBuf.endsWith(trimmedDone)) return false;
+      return true;
+    }
+
+    function loadJsonStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      } catch (e) {
+        // ignore
+      }
+      return fallback;
+    }
+
+    function saveJsonStorage(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function loadNotebookItems() {
+      const stored = loadJsonStorage(NOTEBOOK_STORAGE_KEY, []);
+      return Array.isArray(stored) ? stored.filter(Boolean) : [];
+    }
+
+    function saveNotebookItems(items) {
+      const list = Array.isArray(items) ? items.filter(Boolean) : [];
+      saveJsonStorage(NOTEBOOK_STORAGE_KEY, list.slice(0, NOTEBOOK_MAX_ITEMS));
+    }
+
+    async function readHttpErrorMessage(response, fallbackMessage = '') {
+      const text = await response.text().catch(() => '');
+      if (!text) return fallbackMessage || `HTTP ${response.status}`;
+      try {
+        const data = JSON.parse(text);
+        if (data && typeof data === 'object' && data.message) {
+          return String(data.message);
+        }
+      } catch (e) {
+        // non-json response text
+      }
+      return text;
+    }
+
+    function buildSessionSnapshot(reason = 'manual') {
+      const board = boardState.board;
+      if (!board) return null;
+      const outline = Array.isArray(board.outline) ? board.outline : [];
+      const activeNode = outline.find(node => node.id === board?.progress?.current_node_id);
+      const endedAt = new Date().toISOString();
+      const dialogue = sessionRuntime.messages.slice(-6).map(msg => {
+        const prefix = msg.role === 'assistant'
+          ? 'AI'
+          : (msg.role === 'user'
+            ? (voiceLang === 'en' ? 'Me' : '我')
+            : (voiceLang === 'en' ? 'System' : '系统'));
+        return `${prefix}: ${msg.text}`;
+      });
+      const title = formatBoardTitle(board.goal, voiceLang === 'en' ? 56 : 22) || board.goal || voiceT('board_desc');
+      const nodeCountText = voiceLang === 'en' ? `Nodes ${outline.length}` : `节点数 ${outline.length}`;
+      const summary = `${voiceT('board_status_teaching')}: ${activeNode?.title || '-'} · ${nodeCountText}`;
+      const tags = outline.slice(0, 4).map(node => `${node.id}. ${node.title}`);
+      const durationSeconds = Math.max(1, Math.round((new Date(endedAt).getTime() - new Date(sessionRuntime.startedAt).getTime()) / 1000));
+      return {
+        id: sessionRuntime.recordId,
+        title,
+        summary,
+        tags,
+        dialogue,
+        board,
+        messages: sessionRuntime.messages,
+        board_changes: sessionRuntime.boardChanges,
+        started_at: sessionRuntime.startedAt,
+        ended_at: endedAt,
+        duration_seconds: durationSeconds,
+        reason
+      };
+    }
+
+    function persistSessionToRecords(reason = 'manual') {
+      if (sessionRuntime.saved) return null;
+      if (!boardState.board) return null;
+      const hasOutline = Array.isArray(boardState.board?.outline) && boardState.board.outline.length > 0;
+      if (!sessionRuntime.hasActivity && !hasOutline) return null;
+      if (!sessionRuntime.hasActivity && sessionRuntime.replayLoaded) return null;
+
+      const snapshot = buildSessionSnapshot(reason);
+      if (!snapshot) return null;
+
+      const storedLessons = loadJsonStorage(LESSONS_KEY, []);
+      const lessons = Array.isArray(storedLessons) ? storedLessons : [];
+      if (!lessons.some(item => item.id === snapshot.id)) {
+        lessons.unshift({
+          id: snapshot.id,
+          title: snapshot.title,
+          desc: snapshot.summary,
+          icon: 'lucide:history',
+          color: 'text-cyan-500',
+          pinned: false
+        });
+        saveJsonStorage(LESSONS_KEY, lessons);
+      }
+
+      const archive = loadJsonStorage(SESSION_ARCHIVE_KEY, {});
+      archive[snapshot.id] = snapshot;
+      saveJsonStorage(SESSION_ARCHIVE_KEY, archive);
+      saveJsonStorage('linguify-last-session', snapshot);
+      sessionRuntime.saved = true;
+      return snapshot;
+    }
+
+    async function createBoardFromGoal(goalText) {
+      const response = await fetch(`${BOARD_API_BASE}/create-board`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal: goalText,
+          locale: voiceLang
+        })
+      });
+      if (!response.ok) {
+        const message = await readHttpErrorMessage(response, voiceT('board_create_fail'));
+        throw new Error(message);
+      }
+      const data = await response.json();
+      if (!data.ok || !data.board) {
+        throw new Error(data.message || voiceT('board_create_fail'));
+      }
+      markSessionActivity();
+      if (data.board?.meta?.source === 'fallback') {
+        const reason = (data.board?.meta?.fallback_reason || '').toString().trim();
+        const msg = reason
+          ? (voiceLang === 'en'
+            ? `Board generation failed; fallback template used. Reason: ${reason}`
+            : `板书生成失败，已使用默认模板。原因：${reason}`)
+          : (voiceLang === 'en'
+            ? 'Board generation failed; fallback template used.'
+            : '板书生成失败，已使用默认模板。');
+        pushSessionMessage('system', msg);
+      }
+      return data.board;
+    }
+
+    function isBoardUpdateIntent(text) {
+      // 不把“生成板书/生成课文”当成 update intent；这些应走 create/lesson trigger
+      if (isExplicitBoardCreateRequest(text) || isExplicitLessonTextRequest(text)) return false;
+      return /增加|新增|补充|更细|细一点|展开|跳过|下一章|下一节|add|detail|deeper|skip|next/i.test(text || '');
+    }
+
+    function hasClearLearningGoal(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+
+      // 纯寒暄/闲聊，不触发黑板生成
+      const casualOnly = /^(你好|您好|嗨|哈喽|hello|hi|hey|在吗|你在吗|你好吗|今天怎么样|最近怎么样|早上好|中午好|晚上好|how are you|good morning|good evening|test|测试)[!！。,.?？~\s]*$/i;
+      if (casualOnly.test(raw)) return false;
+
+      const hasLearningIntent = /我想|我要|希望|目标|需求|请帮我|帮我|教我|学习|练习|复习|备考|考试|提升|掌握|讲解|理解|learn|study|practice|prepare|exam|improve|teach|explain|goal/i.test(raw);
+      const hasTopic = /语法|词汇|口语|听力|写作|阅读|发音|数学|代数|几何|微积分|概率|物理|化学|生物|历史|地理|经济|编程|算法|数据结构|python|java|javascript|react|node|sql|machine\s*learning|ai|英语|日语|韩语|法语|西班牙语|德语/i.test(raw);
+      const hasKnowledgeQuestion = /什么是|怎么|如何|为什么|原理|区别|用法|讲讲|解释|what\s+is|how\s+to|why|difference|explain/i.test(raw);
+
+      if (hasLearningIntent && (hasTopic || raw.length >= 10)) return true;
+      if (hasTopic && hasKnowledgeQuestion) return true;
+      return false;
+    }
+
+    // ==================== 澄清阶段：只收敛两件事（学什么 / 当前水平） ====================
+    const clarifyState = {
+      topic: '',
+      level: '',
+      notes: [],
+      lastProposalSignature: '',
+      proposalPending: false
+    };
+
+    function isCasualOnlyText(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return true;
+      const casualOnly = /^(你好|您好|嗨|哈喽|hello|hi|hey|在吗|你在吗|你好吗|今天怎么样|最近怎么样|早上好|中午好|晚上好|how are you|good morning|good evening|test|测试)[!！。,.?？~\s]*$/i;
+      return casualOnly.test(raw);
+    }
+
+    function extractTopicCandidate(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return '';
+      if (isCasualOnlyText(raw)) return '';
+      // 如果看起来只是“水平回答”，不要误判成 topic
+      const looksLikeLevelOnly = /^\s*([ABC][12]|零基础|入门|初级|中级|高级|熟练|精通|新手|老手|初一|初二|初三|高一|高二|高三|初中|高中|大学|研究生|考研|不知道|不清楚|不确定)\s*$/i.test(raw)
+        || /词汇量\s*\d{2,6}/.test(raw)
+        || /学了\s*\d+\s*(年|个月|月|周|天)/.test(raw);
+      if (looksLikeLevelOnly) return '';
+
+      const hasIntent = /我想|我要|希望|目标|需求|请帮我|帮我|教我|学习|练习|复习|备考|考试|提升|掌握|讲解|理解|learn|study|practice|prepare|exam|improve|teach|explain|goal/i.test(raw);
+      const hasQuestion = /什么是|怎么|如何|为什么|原理|区别|用法|讲讲|解释|what\s+is|how\s+to|why|difference|explain/i.test(raw);
+      const tooGeneric = /^(不知道|不清楚|不确定|随便|都行|无所谓)$/i.test(raw);
+      if (tooGeneric) return '';
+
+      // 纯“生成/更新板书”类口令，不作为学习主题
+      const boardCommand = /生成(新的)?板书|生成(新的)?版书|更新板书|更新版书|开始生成|开始上课|开始讲课|写(一份|一个)?板书|做(一份|一个)?板书|出(一份|一个)?板书/i.test(raw);
+      const hasDomainKeyword = /语法|词汇|口语|听力|写作|阅读|发音|数学|代数|几何|微积分|概率|物理|化学|生物|历史|地理|经济|编程|算法|数据结构|python|java|javascript|react|node|sql|machine\s*learning|ai|英语|日语|韩语|法语|西班牙语|德语|二次函数|一次函数|导数|积分|方程|不等式/i.test(raw);
+      if (boardCommand && !hasDomainKeyword) return '';
+
+      // 明确意图 / 明确提问：直接作为 topic 候选
+      if (hasIntent) return raw;
+      if (hasQuestion) return raw;
+
+      // 允许用户用很短的词回答“你想学什么？”（例如：二次函数 / 法语 / 雅思写作）
+      const hasTopicKeyword = /语法|词汇|口语|听力|写作|阅读|发音|数学|代数|几何|微积分|概率|物理|化学|生物|历史|地理|经济|编程|算法|数据结构|python|java|javascript|react|node|sql|machine\s*learning|ai|英语|日语|韩语|法语|西班牙语|德语|二次函数|一次函数|导数|积分|方程|不等式/i.test(raw);
+      if (hasTopicKeyword) return raw;
+      if (raw.length >= 2 && raw.length <= 24) return raw;
+      return '';
+    }
+
+    function extractLevelCandidate(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return '';
+      if (/不知道|不清楚|不确定|说不清|没概念/.test(raw)) return '不确定';
+      if (/零基础|刚开始|刚学|没学过|完全不会/.test(raw)) return '零基础';
+      const cefr = raw.match(/\b([ABC][12])\b/i);
+      if (cefr && cefr[1]) return cefr[1].toUpperCase();
+      const keyword = raw.match(/(零基础|入门|初级|中级|高级|熟练|精通|基础薄弱|基础一般|基础不错|新手|老手)/);
+      if (keyword && keyword[1]) return keyword[1];
+      const vocab = raw.match(/词汇量\s*(?:大概|约|在)?\s*(\d{2,6})/);
+      if (vocab && vocab[1]) return `词汇量约${vocab[1]}`;
+      const duration = raw.match(/学了\s*(\d+)\s*(年|个月|月|周|天)/);
+      if (duration && duration[1] && duration[2]) return `学习时长${duration[1]}${duration[2]}`;
+      const grade = raw.match(/(小学|初中|高中|大学|研究生|考研|初一|初二|初三|高一|高二|高三)/);
+      if (grade && grade[1]) return grade[1];
+      const weak = raw.match(/(基础很差|很差|很弱|薄弱|跟不上|听不懂)/);
+      if (weak && weak[1]) return weak[1];
+      return '';
+    }
+
+    function addClarifyNote(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return;
+      if (isCasualOnlyText(raw)) return;
+      const metaOnly = /^(是|否|好|好的|可以|行|ok|okay|yes|no|y|n|取消|暂不|先不|等等|等一下|开始|继续)[!！。,.?？\s]*$/i;
+      if (metaOnly.test(raw)) return;
+      const boardCmdOnly = /^(生成(新的)?板书|生成(新的)?版书|开始生成|更新板书|更新版书|开始更新|写(一份|一个)?板书|做(一份|一个)?板书|出(一份|一个)?板书|开始上课|开始讲课)[!！。,.?？\s]*$/i;
+      if (boardCmdOnly.test(raw)) return;
+      clarifyState.notes.push(raw);
+      if (clarifyState.notes.length > 10) {
+        clarifyState.notes = clarifyState.notes.slice(-10);
+      }
+    }
+
+    function updateClarifyStateFromUserText(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return;
+      addClarifyNote(raw);
+
+      const topicCandidate = extractTopicCandidate(raw);
+      if (topicCandidate) {
+        if (!clarifyState.topic || topicCandidate.length >= clarifyState.topic.length) {
+          clarifyState.topic = topicCandidate;
+        }
+      }
+
+      const levelCandidate = extractLevelCandidate(raw);
+      if (levelCandidate) {
+        clarifyState.level = levelCandidate;
+      }
+    }
+
+    function buildGoalTextFromClarify() {
+      const lines = [];
+      if (clarifyState.topic) lines.push(`学习目标：${clarifyState.topic}`);
+      if (clarifyState.level) lines.push(`当前水平：${clarifyState.level}`);
+      const extras = clarifyState.notes
+        .filter(Boolean)
+        .slice(-8);
+      if (extras.length) {
+        lines.push('补充信息：');
+        extras.forEach(item => lines.push(`- ${item}`));
+      }
+      return lines.join('\n');
+    }
+
+    function shouldProposeBoardCreate() {
+      if (boardState.board) return false;
+      if (!clarifyState.topic || !clarifyState.level) return false;
+      if (clarifyState.proposalPending) return false;
+      const signature = `${clarifyState.topic}||${clarifyState.level}`;
+      if (signature === clarifyState.lastProposalSignature) return false;
+      return true;
+    }
+
+    function isExplicitBoardCreateRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /生成(新的)?板书|生成(新的)?版书|开始生成|写(一份|一个)?板书|做(一份|一个)?板书|出(一份|一个)?板书|开始上课|开始讲课|重新(创建|生成)板书|重建板书|再(生成|做)(一份|一个)?板书/i.test(raw);
+    }
+
+    function isExplicitBoardRecreateRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /重新(创建|生成)板书|重建板书|再(生成|做)(一份|一个)?板书/i.test(raw);
+    }
+
+    function isExplicitLessonTextRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /生成(一篇|一段)?课文|生成(一段|一篇)?对话|生成情景对话|生成(阅读)?课文原文|生成课文板书|来(一篇|一段)?课文|给我(一篇|一段)?课文|写(一篇|一段)?课文/i.test(raw);
+    }
+
+    function buildLessonTextUpdateRequest(userText) {
+      const board = boardState.board;
+      const outline = Array.isArray(board?.outline) ? board.outline : [];
+      const nodeId = board?.progress?.current_node_id || outline[0]?.id || '';
+      const nodeTitle = nodeId && outline.find(n => n.id === nodeId)?.title
+        ? outline.find(n => n.id === nodeId).title
+        : '';
+      const goal = (board?.goal || '').toString().trim();
+      const extras = clarifyState.notes.filter(Boolean).slice(-6);
+
+      return [
+        `用户请求：${(userText || '').toString().trim()}`,
+        goal ? `当前黑板目标：${goal}` : '',
+        nodeId ? `当前节点：${nodeId}${nodeTitle ? `（${nodeTitle}）` : ''}` : '',
+        extras.length ? `补充信息（最近）：\n${extras.map(x => `- ${x}`).join('\n')}` : '',
+        '任务：请把“完整课文/情景对话原文”写到黑板中（node.content 或新增节点的 content），必须给出可直接学习的原文文本（用 \\n 换行，分角色/分段），排版清晰，避免只给概述。',
+        '如果当前黑板没有专门承载课文的节点，请新增一个节点（例如「完整情景对话课文」/「阅读课文原文」），并将其设为 teaching 作为当前讲解节点。'
+      ].filter(Boolean).join('\n');
+    }
+
+    async function runCreateBoardFlow(goalText) {
+      if (boardState.creatingBoard) return;
+      const cleanGoal = (goalText || '').toString().trim();
+      if (!cleanGoal) return;
+
+      boardState.creatingBoard = true;
+      clarifyState.proposalPending = false;
+      clarifyState.lastProposalSignature = `${clarifyState.topic}||${clarifyState.level}`;
+      try {
+        pushSessionMessage('system', voiceLang === 'en' ? 'Generating blackboard...' : '正在生成板书...');
+        const board = await createBoardFromGoal(cleanGoal);
+        renderBoard(board);
+        await bindBoardContextToVoice();
+        const kickoffPrompt = buildTeachingKickoffPrompt(cleanGoal, board);
+        await sendTextByPreferredTransport(kickoffPrompt);
+      } catch (e) {
+        console.error('生成板书失败:', e);
+        window.alert(e?.message || voiceT('board_create_fail'));
+      } finally {
+        boardState.creatingBoard = false;
+      }
+    }
+
+    async function runUpdateBoardFlow(userInput) {
+      if (boardState.updatingBoard) return;
+      const clean = (userInput || '').toString().trim();
+      if (!clean) return;
+      if (!boardState.board?.board_id) return;
+
+      boardState.updatingBoard = true;
+      try {
+        pushSessionMessage('system', voiceLang === 'en' ? 'Updating blackboard...' : '正在更新板书...');
+        const result = await updateBoardByUserInput(clean);
+        if (result?.board) {
+          renderBoard(result.board);
+          await bindBoardContextToVoice();
+          const prompt = voiceLang === 'en'
+            ? 'The blackboard has been updated. Continue teaching from the current node. Do not paste the full lesson text again; focus on explanation and a short check question.'
+            : '黑板已更新。请从当前节点继续讲解：不要把整段课文原文再粘贴一遍，重点做讲解与带练，并在本轮末尾给一个简短检查问题。';
+          await sendTextByPreferredTransport(prompt);
+        }
+      } catch (e) {
+        console.error('更新板书失败:', e);
+        window.alert(e?.message || voiceT('board_update_fail'));
+      } finally {
+        boardState.updatingBoard = false;
+      }
+    }
+
+    async function maybeTriggerBoardTaskByKeyword(userText) {
+      const raw = (userText || '').toString().trim();
+      if (!raw) return false;
+
+      const wantsLesson = isExplicitLessonTextRequest(raw);
+      const wantsCreate = isExplicitBoardCreateRequest(raw) || wantsLesson;
+      const wantsRecreate = isExplicitBoardRecreateRequest(raw);
+
+      if (!boardState.board) {
+        if (!wantsCreate) return false;
+        if (!clarifyState.topic || !clarifyState.level) {
+          pushSessionMessage('system', voiceLang === 'en'
+            ? 'To generate the blackboard, please clarify: what to learn + your current level.'
+            : '要生成板书，请先把“学什么 + 当前水平”说清楚（你可以继续回答右侧的问题）。');
+          return true;
+        }
+        await runCreateBoardFlow(buildGoalTextFromClarify());
+        return true;
+      }
+
+      if (boardState.board && wantsRecreate) {
+        const goalText = (boardState.board?.goal || '').toString().trim()
+          || buildGoalTextFromClarify()
+          || raw;
+        await runCreateBoardFlow(goalText);
+        return true;
+      }
+
+      if (boardState.board && wantsLesson) {
+        const request = buildLessonTextUpdateRequest(raw);
+        await runUpdateBoardFlow(request);
+        return true;
+      }
+
+      return false;
+    }
+
+    function summarizeBoardForTutor(board) {
+      const safeBoard = board && typeof board === 'object' ? board : {};
+      const outline = Array.isArray(safeBoard.outline) ? safeBoard.outline : [];
+      const currentNodeId = (safeBoard.progress && safeBoard.progress.current_node_id)
+        ? String(safeBoard.progress.current_node_id)
+        : (outline[0] && outline[0].id ? String(outline[0].id) : '');
+      const currentNode = outline.find(node => String(node.id) === currentNodeId) || outline[0] || null;
+      const nodeMap = safeBoard.nodes && typeof safeBoard.nodes === 'object' ? safeBoard.nodes : {};
+      const currentNodeContent = currentNode && nodeMap[currentNode.id]
+        ? String(nodeMap[currentNode.id].content || '').trim()
+        : '';
+      const outlineSummary = outline
+        .slice(0, 8)
+        .map((node, index) => `${index + 1}. [${node.id}] ${node.title} (${node.status || 'pending'})`)
+        .join('\n');
+
+      return {
+        boardId: String(safeBoard.board_id || ''),
+        boardGoal: String(safeBoard.goal || '').trim(),
+        currentNodeId: currentNode ? String(currentNode.id || '') : '',
+        outlineSummary,
+        currentNodeContent: currentNodeContent.slice(0, 500)
+      };
+    }
+
+    function buildTeachingKickoffPrompt(userGoal, board) {
+      const summary = summarizeBoardForTutor(board);
+      const goal = String(userGoal || '').trim();
+      if (voiceLang === 'en') {
+        return [
+          'Start a classroom-style lesson based on the provided blackboard.',
+          `User learning goal: ${goal}`,
+          `Blackboard goal: ${summary.boardGoal || goal}`,
+          `Board ID: ${summary.boardId || 'N/A'}`,
+          `Current node: ${summary.currentNodeId || 'N/A'}`,
+          'Blackboard outline:',
+          summary.outlineSummary || 'N/A',
+          'Current node content:',
+          summary.currentNodeContent || 'N/A',
+          'Requirements:',
+          '- Start teaching from the current node now.',
+          '- Keep all explanations aligned with the blackboard structure.',
+          '- End this turn with one short check question for the learner.'
+        ].join('\n');
+      }
+
+      return [
+        '请基于已生成黑板，开启课堂式讲解。',
+        `用户学习目标：${goal}`,
+        `黑板目标：${summary.boardGoal || goal}`,
+        `黑板ID：${summary.boardId || 'N/A'}`,
+        `当前节点：${summary.currentNodeId || 'N/A'}`,
+        '黑板大纲：',
+        summary.outlineSummary || 'N/A',
+        '当前节点内容：',
+        summary.currentNodeContent || 'N/A',
+        '要求：',
+        '- 先从当前节点开始讲解。',
+        '- 讲解必须围绕黑板结构展开。',
+        '- 本轮末尾给学习者一个简短检查问题。'
+      ].join('\n');
+    }
+
+    async function updateBoardByUserInput(userInput) {
+      if (!boardState.board?.board_id) return null;
+      const response = await fetch(`${BOARD_API_BASE}/update-board`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_id: boardState.board.board_id,
+          user_input: userInput,
+          trigger_source: 'user_input',
+          confirmed: true,
+          locale: voiceLang
+        })
+      });
+      if (!response.ok) {
+        const message = await readHttpErrorMessage(response, voiceT('board_update_fail'));
+        throw new Error(message);
+      }
+      const data = await response.json();
+      if (!data.ok || !data.board) {
+        throw new Error(data.message || voiceT('board_update_fail'));
+      }
+      markSessionActivity();
+      if (data.patch && Array.isArray(data.patch.operations) && data.patch.operations.length) {
+        sessionRuntime.boardChanges.push({
+          ts: new Date().toISOString(),
+          rationale: data.patch.rationale || '',
+          operations: data.patch.operations
+        });
+      }
+      return {
+        board: data.board,
+        patch: data.patch || null
+      };
+    }
+
+    const backendCaps = {
+      loaded: false,
+      hasOpenAIKey: false,
+      hasOpenRouterKey: false
+    };
+
+    const voiceFallback = {
+      enabled: false, // 统一聊天中的语音输入开关（语音识别 -> 文本）
+      listening: false,
+      recognition: null,
+      lastTranscript: '',
+      // 默认关闭浏览器朗读器（你要的是 OpenAI Realtime 真语音）
+      speakEnabled: false,
+      skipNextTts: false
+    };
+
+    function mimeFromAudioFormat(format) {
+      const fmt = (format || '').toString().toLowerCase();
+      if (fmt === 'mp3' || fmt === 'mpeg') return 'audio/mpeg';
+      if (fmt === 'wav' || fmt === 'wave') return 'audio/wav';
+      if (fmt === 'ogg' || fmt === 'opus') return 'audio/ogg';
+      return 'audio/wav';
+    }
+
+    function base64ToBytes(base64) {
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    }
+
+    // ==================== OpenAI Realtime 真语音（PCM16） ====================
+    const REALTIME_SAMPLE_RATE = 24000;
+    const REALTIME_PROCESSOR_BUFFER_SIZE = 4096;
+
+    const realtimeVoice = {
+      recording: false,
+      stream: null,
+      audioContext: null,
+      sourceNode: null,
+      processorNode: null,
+      inputSampleRate: 0,
+      playbackContext: null,
+      playbackNextTime: 0,
+      currentResponseHadAudio: false
+    };
+
+    function downsampleFloat32(input, inputRate, targetRate) {
+      if (!input || !input.length) return new Float32Array(0);
+      if (!inputRate || inputRate === targetRate) return input;
+      const ratio = inputRate / targetRate;
+      const newLength = Math.floor(input.length / ratio);
+      const result = new Float32Array(newLength);
+      let offsetResult = 0;
+      let offsetBuffer = 0;
+      while (offsetResult < result.length) {
+        const nextOffsetBuffer = Math.floor((offsetResult + 1) * ratio);
+        let sum = 0;
+        let count = 0;
+        for (let i = offsetBuffer; i < nextOffsetBuffer && i < input.length; i++) {
+          sum += input[i];
+          count++;
+        }
+        result[offsetResult] = count ? (sum / count) : 0;
+        offsetResult++;
+        offsetBuffer = nextOffsetBuffer;
+      }
+      return result;
+    }
+
+    function float32ToPcm16Bytes(float32) {
+      const buffer = new ArrayBuffer(float32.length * 2);
+      const view = new DataView(buffer);
+      for (let i = 0; i < float32.length; i++) {
+        let s = float32[i];
+        s = Math.max(-1, Math.min(1, s));
+        view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      }
+      return new Uint8Array(buffer);
+    }
+
+    function base64ToInt16Array(base64) {
+      const bytes = base64ToBytes(base64);
+      const len = Math.floor(bytes.length / 2);
+      const out = new Int16Array(len);
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      for (let i = 0; i < len; i++) {
+        out[i] = view.getInt16(i * 2, true);
+      }
+      return out;
+    }
+
+    function ensureRealtimePlaybackContext() {
+      if (realtimeVoice.playbackContext && realtimeVoice.playbackContext.state !== 'closed') {
+        return realtimeVoice.playbackContext;
+      }
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        realtimeVoice.playbackContext = new Ctx({ sampleRate: REALTIME_SAMPLE_RATE });
+      } catch (e) {
+        realtimeVoice.playbackContext = new Ctx();
+      }
+      realtimeVoice.playbackNextTime = 0;
+      return realtimeVoice.playbackContext;
+    }
+
+    async function unlockRealtimePlayback() {
+      const ctx = ensureRealtimePlaybackContext();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) { /* ignore */ }
+      }
+    }
+
+    function playOpenAIRealtimePcm16Delta(base64Pcm16) {
+      const b64 = (base64Pcm16 || '').toString().trim();
+      if (!b64) return;
+      const ctx = ensureRealtimePlaybackContext();
+      if (!ctx) return;
+      unlockRealtimePlayback();
+
+      const pcm16 = base64ToInt16Array(b64);
+      if (!pcm16.length) return;
+      const float32 = new Float32Array(pcm16.length);
+      for (let i = 0; i < pcm16.length; i++) {
+        float32[i] = pcm16[i] / 0x8000;
+      }
+
+      const buffer = ctx.createBuffer(1, float32.length, REALTIME_SAMPLE_RATE);
+      buffer.getChannelData(0).set(float32);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      const startAt = Math.max(now, realtimeVoice.playbackNextTime || now);
+      source.start(startAt);
+      realtimeVoice.playbackNextTime = startAt + buffer.duration;
+    }
+
+    function cleanupRealtimeMic() {
+      try { realtimeVoice.processorNode?.disconnect?.(); } catch (e) { /* ignore */ }
+      try { realtimeVoice.sourceNode?.disconnect?.(); } catch (e) { /* ignore */ }
+      realtimeVoice.processorNode = null;
+      realtimeVoice.sourceNode = null;
+
+      if (realtimeVoice.stream) {
+        try { realtimeVoice.stream.getTracks().forEach(track => track.stop()); } catch (e) { /* ignore */ }
+      }
+      realtimeVoice.stream = null;
+
+      if (realtimeVoice.audioContext && realtimeVoice.audioContext.state !== 'closed') {
+        try { realtimeVoice.audioContext.close(); } catch (e) { /* ignore */ }
+      }
+      realtimeVoice.audioContext = null;
+      realtimeVoice.inputSampleRate = 0;
+    }
+
+    async function startOpenAIRealtimeVoiceCall() {
+      await loadBackendCaps();
+      if (!backendCaps.hasOpenAIKey) {
+        window.alert(voiceLang === 'en'
+          ? 'OpenAI Realtime voice requires OPENAI_API_KEY on backend.'
+          : 'OpenAI Realtime 真语音需要后端配置 OPENAI_API_KEY。');
+        return;
+      }
+      if (realtimeVoice.recording) return;
+      // 允许先开启实时语音聊天：用户可以先用语音提出问题/目标，后续再触发生成黑板并绑定讲师上下文
+
+      // 停止浏览器语音识别，避免抢麦
+      if (voiceFallback.listening) {
+        try { voiceFallback.recognition?.stop?.(); } catch (e) { /* ignore */ }
+        voiceFallback.listening = false;
+      }
+
+      realtimeVoice.recording = true;
+      realtimeVoice.currentResponseHadAudio = false;
+      voiceFallback.speakEnabled = false; // 使用 Realtime 真音频，不用浏览器朗读
+      updateVoiceButtonUI();
+
+      await unlockRealtimePlayback();
+      // 每次启动语音会话，先把模型切到“澄清引导员”模式（无板书时尤其重要）
+      await setRealtimeClarificationMode();
+      // 有黑板时绑定上下文；没有也可正常通话
+      await bindBoardContextToVoice();
+      await ensureRealtimeSocket();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+      realtimeVoice.stream = stream;
+
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) {
+        throw new Error(voiceLang === 'en' ? 'AudioContext is not supported in this browser.' : '当前浏览器不支持 AudioContext。');
+      }
+      const audioContext = new Ctx();
+      realtimeVoice.audioContext = audioContext;
+      realtimeVoice.inputSampleRate = audioContext.sampleRate || 48000;
+      if (audioContext.state === 'suspended') {
+        try { await audioContext.resume(); } catch (e) { /* ignore */ }
+      }
+
+      const sourceNode = audioContext.createMediaStreamSource(stream);
+      realtimeVoice.sourceNode = sourceNode;
+
+      const processor = audioContext.createScriptProcessor(REALTIME_PROCESSOR_BUFFER_SIZE, 1, 1);
+      realtimeVoice.processorNode = processor;
+
+      const silentGain = audioContext.createGain();
+      silentGain.gain.value = 0;
+
+      processor.onaudioprocess = (event) => {
+        try {
+          if (!realtimeVoice.recording) return;
+          const ws = boardState.ws;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          const input = event.inputBuffer.getChannelData(0);
+          const downsampled = downsampleFloat32(input, realtimeVoice.inputSampleRate, REALTIME_SAMPLE_RATE);
+          const pcm16Bytes = float32ToPcm16Bytes(downsampled);
+          const audioBase64 = bytesToBase64(pcm16Bytes);
+          ws.send(JSON.stringify({ type: 'audio_data', audio: audioBase64 }));
+        } catch (e) {
+          // ignore chunk errors
+        }
+      };
+
+      sourceNode.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(audioContext.destination);
+    }
+
+    async function maybeBootstrapBoardFromVoiceText(text) {
+      const clean = (text || '').toString().trim();
+      if (!clean) return;
+      updateClarifyStateFromUserText(clean);
+
+      // 语音里直接说“生成板书/生成课文”等关键词：硬触发交给黑板文本模型
+      if (await maybeTriggerBoardTaskByKeyword(clean)) {
+        return;
+      }
+
+      // 没有黑板时，只在“学什么 + 当前水平”都明确后，给出用户确认卡片
+      if (shouldProposeBoardCreate()) {
+        const signature = `${clarifyState.topic}||${clarifyState.level}`;
+        clarifyState.proposalPending = true;
+        pushActionCard({
+          type: 'create_board',
+          title: voiceLang === 'en' ? 'Generate a new blackboard?' : '是否生成新的板书？',
+          desc: voiceLang === 'en'
+            ? `Topic: ${clarifyState.topic}\nLevel: ${clarifyState.level}`
+            : `学习目标：${clarifyState.topic}\n当前水平：${clarifyState.level}`,
+          yesLabel: voiceLang === 'en' ? 'Generate' : '生成',
+          noLabel: voiceLang === 'en' ? 'Not yet' : '暂不',
+          signature,
+          goalText: buildGoalTextFromClarify()
+        });
+        clarifyState.lastProposalSignature = signature;
+        return;
+      }
+    }
+
+    async function stopOpenAIRealtimeVoiceCall() {
+      if (!realtimeVoice.recording) return;
+      realtimeVoice.recording = false;
+      updateVoiceButtonUI();
+      try {
+        const ws = boardState.ws;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'audio_end' }));
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        cleanupRealtimeMic();
+      }
+    }
+
+    function forceStopOpenAIRealtimeVoiceCall() {
+      realtimeVoice.recording = false;
+      try {
+        const ws = boardState.ws;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'audio_end' }));
+        }
+      } catch (e) {
+        // ignore
+      }
+      cleanupRealtimeMic();
+    }
+
+    function playServerAudio(audioBase64, format) {
+      const b64 = (audioBase64 || '').toString().trim();
+      if (!b64) return;
+      const mime = mimeFromAudioFormat(format);
+      const bytes = base64ToBytes(b64);
+      const blob = new Blob([bytes], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = () => URL.revokeObjectURL(url);
+      audio.play().catch(() => {
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    function normalizeSpeakText(text) {
+      return (text || '')
+        .toString()
+        .replace(/^\[(?:Node|节点)\s*:?\s*[0-9A-Za-z_-]+\]\s*/i, '')
+        .trim();
+    }
+
+    function speakText(text) {
+      const content = normalizeSpeakText(text);
+      if (!content) return;
+      // 统一禁用浏览器朗读器（避免“无障碍朗读器”那种机械音）
+      return;
+      if (!window.speechSynthesis) return;
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        // ignore
+      }
+      const utterance = new SpeechSynthesisUtterance(content);
+      utterance.lang = voiceLang === 'en' ? 'en-US' : 'zh-CN';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function maybeSpeakAi(text) {
+      if (!voiceFallback.enabled || !voiceFallback.speakEnabled) return;
+      // 当后端具备 OpenAI Realtime 时，优先使用 Realtime 真语音（response.audio.delta），不再用浏览器朗读器
+      if (backendCaps.hasOpenAIKey) return;
+      speakText(text);
+    }
+
+    function updateVoiceButtonUI() {
+      const micBtn = document.getElementById('chat-voice-btn');
+      const voiceBtn = document.getElementById('voice-chat-btn');
+      const missingKey = backendCaps.loaded && !backendCaps.hasOpenAIKey && !backendCaps.hasOpenRouterKey;
+
+      if (micBtn) {
+        const iconEl = micBtn.querySelector('iconify-icon');
+        micBtn.disabled = false;
+        micBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-rose-500', 'bg-rose-50');
+        micBtn.classList.add('text-slate-400', 'hover:text-sky-500');
+
+        if (missingKey) {
+          const label = voiceLang === 'en'
+            ? 'Voice unavailable (no API key)'
+            : '语音不可用（未配置API密钥）';
+          micBtn.disabled = true;
+          micBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          micBtn.title = label;
+          micBtn.setAttribute('aria-label', label);
+          if (iconEl) iconEl.setAttribute('icon', 'lucide:mic-off');
+        } else if (voiceFallback.listening) {
+          const label = voiceT('voice_mic_listening');
+          micBtn.classList.remove('text-slate-400', 'hover:text-sky-500');
+          micBtn.classList.add('text-rose-500', 'bg-rose-50');
+          micBtn.title = label;
+          micBtn.setAttribute('aria-label', label);
+          if (iconEl) iconEl.setAttribute('icon', 'lucide:mic');
+        } else {
+          const label = voiceT('voice_mic_idle');
+          micBtn.title = label;
+          micBtn.setAttribute('aria-label', label);
+          if (iconEl) iconEl.setAttribute('icon', 'lucide:mic');
+        }
+      }
+
+      if (voiceBtn) {
+        voiceBtn.disabled = false;
+        voiceBtn.classList.remove('opacity-60', 'cursor-not-allowed', 'bg-slate-400', 'hover:bg-slate-400', 'bg-rose-500', 'hover:bg-rose-600', 'bg-sky-500', 'hover:bg-sky-600');
+
+        if (missingKey) {
+          voiceBtn.disabled = true;
+          voiceBtn.textContent = voiceLang === 'en'
+            ? 'Voice unavailable (no API key)'
+            : '语音不可用（未配置API密钥）';
+          voiceBtn.classList.add('opacity-60', 'cursor-not-allowed', 'bg-slate-400', 'hover:bg-slate-400');
+        } else if (backendCaps.loaded && backendCaps.hasOpenAIKey && realtimeVoice.recording) {
+          voiceBtn.textContent = voiceT('voice_chat_btn_listening');
+          voiceBtn.classList.add('bg-rose-500', 'hover:bg-rose-600');
+        } else if ((!backendCaps.loaded || !backendCaps.hasOpenAIKey) && voiceFallback.listening) {
+          // 没有 OpenAI Realtime 时，语音按钮回退为“语音识别→文本”
+          voiceBtn.textContent = voiceT('voice_chat_btn_listening');
+          voiceBtn.classList.add('bg-rose-500', 'hover:bg-rose-600');
+        } else {
+          voiceBtn.textContent = voiceT('voice_chat_btn');
+          voiceBtn.classList.add('bg-sky-500', 'hover:bg-sky-600');
+        }
+      }
+    }
+
+    async function loadBackendCaps() {
+      if (backendCaps.loaded) return backendCaps;
+      try {
+        await ensureBackendReachable();
+        const resp = await fetch(`${BOARD_API_BASE}/health`);
+        const data = await resp.json().catch(() => ({}));
+        backendCaps.hasOpenAIKey = !!data.has_openai_key;
+        backendCaps.hasOpenRouterKey = !!data.has_openrouter_key;
+      } catch (e) {
+        // ignore
+      } finally {
+        backendCaps.loaded = true;
+        // 保持按钮可点击，具体可用性在点击后提示/后端报错
+        voiceFallback.enabled = true;
+        updateVoiceButtonUI();
+      }
+      return backendCaps;
+    }
+
+    function ensureSpeechRecognition() {
+      if (voiceFallback.recognition) return voiceFallback.recognition;
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return null;
+      const rec = new SR();
+      rec.lang = voiceLang === 'en' ? 'en-US' : 'zh-CN';
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onresult = async (event) => {
+        try {
+          const transcript = event?.results?.[0]?.[0]?.transcript || '';
+          const clean = (transcript || '').trim();
+          voiceFallback.lastTranscript = clean;
+          if (clean) {
+            await handleChatSendText(clean);
+          }
+        } finally {
+          voiceFallback.listening = false;
+          updateVoiceButtonUI();
+        }
+      };
+      rec.onerror = () => {
+        voiceFallback.listening = false;
+        updateVoiceButtonUI();
+      };
+      rec.onend = () => {
+        voiceFallback.listening = false;
+        updateVoiceButtonUI();
+      };
+      voiceFallback.recognition = rec;
+      return rec;
+    }
+
+    async function toggleVoiceFallback() {
+      await loadBackendCaps();
+      const missingKey = backendCaps.loaded && !backendCaps.hasOpenAIKey && !backendCaps.hasOpenRouterKey;
+      if (missingKey) {
+        window.alert(voiceLang === 'en'
+          ? 'Voice is unavailable because no API key is configured.'
+          : '语音不可用：未配置可用的 API Key。');
+        return;
+      }
+      voiceFallback.enabled = true;
+      const rec = ensureSpeechRecognition();
+      if (!rec) {
+        window.alert(voiceLang === 'en'
+          ? 'SpeechRecognition is not supported in this browser. Please use Chrome/Edge and open via http://localhost.'
+          : '当前浏览器不支持语音识别。请使用 Chrome/Edge，并尽量通过 http://localhost 打开页面。');
+        return;
+      }
+      if (voiceFallback.listening) {
+        try { rec.stop(); } catch (e) { /* ignore */ }
+        voiceFallback.listening = false;
+        updateVoiceButtonUI();
+        return;
+      }
+      voiceFallback.listening = true;
+      updateVoiceButtonUI();
+      try {
+        rec.start();
+      } catch (e) {
+        voiceFallback.listening = false;
+        updateVoiceButtonUI();
+      }
+    }
+
+    async function sendTextViaHttpFallback(text) {
+      const response = await fetch(`${BOARD_API_BASE}/chat-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          board_id: boardState.board?.board_id || '',
+          locale: voiceLang
+        })
+      });
+      if (!response.ok) {
+        const message = await readHttpErrorMessage(response, voiceT('board_create_fail'));
+        throw new Error(message);
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!data.ok) {
+        throw new Error(data.message || '模型调用失败');
+      }
+
+      const aiText = (data.text || '').toString().trim();
+      if (data.audio_base64) {
+        // 使用模型直出音频，关闭浏览器 TTS 避免重复播放
+        voiceFallback.speakEnabled = false;
+        playServerAudio(data.audio_base64, data.format);
+      } else {
+        // 没有音频就只显示文字，不再用浏览器朗读器
+        voiceFallback.speakEnabled = false;
+      }
+
+      if (aiText) {
+        pushSessionMessage('assistant', aiText);
+      }
+    }
+
+    async function sendTextByPreferredTransport(text) {
+      try {
+        await bindBoardContextToVoice();
+        const ws = await ensureRealtimeSocket();
+        realtimeVoice.currentResponseHadAudio = false;
+        if (backendCaps.hasOpenAIKey) {
+          // 有 Realtime 真音频时，不再用浏览器朗读
+          voiceFallback.speakEnabled = false;
+          await unlockRealtimePlayback();
+        }
+        ws.send(JSON.stringify({
+          type: 'text_message',
+          text
+        }));
+        return 'ws';
+      } catch (wsError) {
+        console.warn('WebSocket 发送失败，回退 HTTP /chat-text:', wsError);
+        await sendTextViaHttpFallback(text);
+        return 'http';
+      }
+    }
+
+    async function handleChatSendText(text) {
+      const cleanText = (text || '').toString().trim();
+      if (!cleanText) return;
+      pushSessionMessage('user', cleanText);
+      updateClarifyStateFromUserText(cleanText);
+
+      try {
+        // 如果用户在对 action card 口头回复“是/否”，自动触发对应决策
+        const pendingCreate = getLatestUnresolvedActionCard('create_board');
+        if (pendingCreate && (isAffirmativeText(cleanText) || isNegativeText(cleanText))) {
+          await handleActionCardDecision(pendingCreate, isAffirmativeText(cleanText));
+          return;
+        }
+        const pendingUpdate = getLatestUnresolvedActionCard('update_board');
+        if (pendingUpdate && (isAffirmativeText(cleanText) || isNegativeText(cleanText))) {
+          await handleActionCardDecision(pendingUpdate, isAffirmativeText(cleanText));
+          return;
+        }
+
+        // 文字里命中“生成板书/生成课文”等关键词：硬触发交给黑板文本模型
+        if (await maybeTriggerBoardTaskByKeyword(cleanText)) {
+          return;
+        }
+
+        if (!boardState.board) {
+          if (isExplicitBoardCreateRequest(cleanText) && clarifyState.topic && clarifyState.level) {
+            if (!hasUnresolvedActionCard('create_board')) {
+              const signature = `${clarifyState.topic}||${clarifyState.level}`;
+              clarifyState.proposalPending = true;
+              pushActionCard({
+                type: 'create_board',
+                title: voiceLang === 'en' ? 'Generate a new blackboard?' : '是否生成新的板书？',
+                desc: voiceLang === 'en'
+                  ? `Topic: ${clarifyState.topic}\nLevel: ${clarifyState.level}`
+                  : `学习目标：${clarifyState.topic}\n当前水平：${clarifyState.level}`,
+                yesLabel: voiceLang === 'en' ? 'Generate' : '生成',
+                noLabel: voiceLang === 'en' ? 'Not yet' : '暂不',
+                signature,
+                goalText: buildGoalTextFromClarify()
+              });
+              clarifyState.lastProposalSignature = signature;
+            }
+            // 不把“生成板书”的口令当成澄清对话内容转发给讲师
+            return;
+          }
+          if (shouldProposeBoardCreate() && !hasUnresolvedActionCard('create_board')) {
+            const signature = `${clarifyState.topic}||${clarifyState.level}`;
+            clarifyState.proposalPending = true;
+            pushActionCard({
+              type: 'create_board',
+              title: voiceLang === 'en' ? 'Generate a new blackboard?' : '是否生成新的板书？',
+              desc: voiceLang === 'en'
+                ? `Topic: ${clarifyState.topic}\nLevel: ${clarifyState.level}`
+                : `学习目标：${clarifyState.topic}\n当前水平：${clarifyState.level}`,
+              yesLabel: voiceLang === 'en' ? 'Generate' : '生成',
+              noLabel: voiceLang === 'en' ? 'Not yet' : '暂不',
+              signature,
+              goalText: buildGoalTextFromClarify()
+            });
+            clarifyState.lastProposalSignature = signature;
+            return;
+          }
+          // 澄清阶段继续与讲师对话（讲师会追问学什么/水平）
+          await sendTextByPreferredTransport(cleanText);
+          return;
+        }
+
+        if (isBoardUpdateIntent(cleanText)) {
+          if (!hasUnresolvedActionCard('update_board')) {
+            pushActionCard({
+              type: 'update_board',
+              title: voiceLang === 'en' ? 'Update the blackboard?' : '是否更新板书？',
+              desc: voiceLang === 'en'
+                ? 'This looks like a request to modify/add to the blackboard.'
+                : '检测到你在请求修改/补充板书内容，是否更新板书？',
+              yesLabel: voiceLang === 'en' ? 'Update' : '更新',
+              noLabel: voiceLang === 'en' ? 'Cancel' : '取消',
+              userInput: cleanText
+            });
+          }
+          return;
+        }
+
+        await sendTextByPreferredTransport(cleanText);
+      } catch (error) {
+        console.error('黑板流程失败:', error);
+        window.alert(error.message || voiceT('board_create_fail'));
+      }
+    }
+
+    async function ensureRealtimeSocket() {
+      if (boardState.ws && boardState.ws.readyState === WebSocket.OPEN) {
+        return boardState.ws;
+      }
+      await ensureBackendReachable();
+      return new Promise((resolve, reject) => {
+        const ws = new WebSocket(BOARD_WS_URL);
+        boardState.ws = ws;
+        ws.onopen = () => resolve(ws);
+        ws.onerror = (event) => reject(event);
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'realtime_event') {
+              const evt = payload.event || {};
+              if (evt.type === 'error') {
+                const msg = (evt?.error?.message || evt?.message || '').toString().trim() || (voiceLang === 'en'
+                  ? 'OpenAI Realtime error. Check backend logs for details.'
+                  : 'OpenAI Realtime 返回错误，请查看后端日志。');
+                console.error('Realtime event error:', evt);
+                pushSessionMessage('system', msg);
+                window.alert(msg);
+                sessionRuntime.aiDeltaBuffer = '';
+                return;
+              }
+
+              if (evt.type === 'response.audio_transcript.delta' || evt.type === 'response.text.delta') {
+                const channel = evt.type.includes('audio_transcript') ? 'audio_transcript' : 'text';
+                if (!sessionRuntime.aiTextChannel) sessionRuntime.aiTextChannel = channel;
+                if (sessionRuntime.aiTextChannel !== channel) {
+                  // 忽略另一条文本通道，避免重复
+                  return;
+                }
+                const text = normalizeDeltaText(evt);
+                sessionRuntime.aiDeltaBuffer += text;
+                const match = text.match(/\[(?:Node|节点)\s*:?\s*([0-9A-Za-z_-]+)\]/i);
+                if (match && match[1]) {
+                  setCurrentNode(match[1]);
+                }
+              } else if (evt.type === 'response.audio.delta') {
+                // OpenAI Realtime 真音频输出（PCM16 base64）
+                if (evt.delta) {
+                  realtimeVoice.currentResponseHadAudio = true;
+                  voiceFallback.speakEnabled = false;
+                  playOpenAIRealtimePcm16Delta(evt.delta);
+                }
+              } else if (evt.type === 'response.audio_transcript.done' || evt.type === 'response.text.done') {
+                const channel = evt.type.includes('audio_transcript') ? 'audio_transcript' : 'text';
+                if (!sessionRuntime.aiTextChannel) sessionRuntime.aiTextChannel = channel;
+                if (sessionRuntime.aiTextChannel !== channel) {
+                  // 忽略另一条文本通道，避免重复
+                  return;
+                }
+                const doneText = normalizeDoneText(evt);
+                sessionRuntime.aiDoneText = doneText;
+                if (doneText) {
+                  const match = doneText.match(/\[(?:Node|节点)\s*:?\s*([0-9A-Za-z_-]+)\]/i);
+                  if (match && match[1]) {
+                    setCurrentNode(match[1]);
+                  }
+                }
+              } else if (evt.type === 'conversation.item.input_audio_transcription.completed') {
+                const transcript = evt.transcript
+                  || evt?.item?.content?.find?.(part => part.transcript)?.transcript
+                  || '';
+                if (transcript) {
+                  pushSessionMessage('user', transcript);
+                  // 允许用户先语音表达学习目标/问题，再自动生成黑板并绑定讲师
+                  if (isAffirmativeText(transcript) || isNegativeText(transcript)) {
+                    const pendingCreate = getLatestUnresolvedActionCard('create_board');
+                    if (pendingCreate) {
+                      handleActionCardDecision(pendingCreate, isAffirmativeText(transcript));
+                      return;
+                    }
+                    const pendingUpdate = getLatestUnresolvedActionCard('update_board');
+                    if (pendingUpdate) {
+                      handleActionCardDecision(pendingUpdate, isAffirmativeText(transcript));
+                      return;
+                    }
+                  }
+                  maybeBootstrapBoardFromVoiceText(transcript);
+                }
+              } else if (evt.type === 'response.done') {
+                const doneText = (sessionRuntime.aiDoneText || '').trim();
+                if (shouldAppendDoneText(doneText, sessionRuntime.aiDeltaBuffer)) {
+                  sessionRuntime.aiDeltaBuffer += (sessionRuntime.aiDeltaBuffer ? '' : '') + doneText;
+                }
+                const finalAiText = sessionRuntime.aiDeltaBuffer.trim();
+                if (finalAiText) {
+                  pushSessionMessage('assistant', finalAiText);
+                  if (voiceFallback.skipNextTts) {
+                    voiceFallback.skipNextTts = false;
+                  } else if (!realtimeVoice.currentResponseHadAudio) {
+                    maybeSpeakAi(finalAiText);
+                  }
+                }
+                sessionRuntime.aiDeltaBuffer = '';
+                sessionRuntime.aiDoneText = '';
+                sessionRuntime.aiTextChannel = '';
+                realtimeVoice.currentResponseHadAudio = false;
+              }
+            } else if (payload.type === 'board_context_bound' && payload.board) {
+              renderBoard(payload.board);
+            } else if (payload.type === 'current_node_updated' && payload.node_id) {
+              setCurrentNode(payload.node_id);
+            } else if (payload.type === 'audio_output') {
+              // 模型直出音频：播放音频，并避免浏览器 TTS 重复朗读
+              voiceFallback.speakEnabled = false;
+              voiceFallback.skipNextTts = true;
+              playServerAudio(payload.audio_base64, payload.format);
+            } else if (payload.type === 'error') {
+              const msg = (payload.message || '').toString().trim() || '服务端返回错误';
+              console.error('WS错误:', msg);
+              window.alert(msg);
+            }
+          } catch (e) {
+            // ignore
+          }
+        };
+      });
+    }
+
+    async function bindBoardContextToVoice() {
+      if (!boardState.board?.board_id) return;
+      try {
+        const ws = await ensureRealtimeSocket();
+        ws.send(JSON.stringify({
+          type: 'bind_board_context',
+          board_id: boardState.board.board_id
+        }));
+      } catch (error) {
+        console.error('绑定黑板上下文失败:', error);
+      }
+    }
+
+    async function setRealtimeClarificationMode() {
+      try {
+        const ws = await ensureRealtimeSocket();
+        ws.send(JSON.stringify({
+          type: 'update_session',
+          instructions: voiceLang === 'en'
+            ? [
+              'You are the Realtime Clarification Agent for "Blackboard AI".',
+              'Ask 2-4 short questions per turn to clarify learning goal and current level.',
+              'Do NOT teach yet. Do NOT generate blackboard content. Do NOT claim you cannot generate a blackboard.',
+              'When clear enough, summarize in bullets and ask for confirmation to generate the blackboard (yes/no).'
+            ].join('\n')
+            : [
+              '你是「Blackboard AI」的实时澄清引导员。',
+              '每轮问 2–4 个短问题，澄清“学什么 / 当前水平 / 关键约束”。',
+              '现在不要开始讲解知识点；不要生成板书正文；不要说“无法生成板书”。',
+              '当信息足够清晰：用要点复述后，询问用户是否生成板书（是/否）。'
+            ].join('\n')
+        }));
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function autoResizeChatInput(inputEl) {
+      if (!inputEl) return;
+      inputEl.style.height = 'auto';
+      inputEl.style.height = `${inputEl.scrollHeight}px`;
+    }
+
+    async function handleChatSend() {
+      const input = document.getElementById('chat-text-input');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      autoResizeChatInput(input);
+      await handleChatSendText(text);
+    }
+
+    function initBoardInteractions() {
+      const sendBtn = document.getElementById('chat-send-btn');
+      const inputEl = document.getElementById('chat-text-input');
+      const micBtn = document.getElementById('chat-voice-btn');
+      const voiceBtn = document.getElementById('voice-chat-btn');
+      const endCallBtn = document.getElementById('end-call-btn');
+      const bbEditBtn = document.getElementById('bb-edit-btn');
+      const bbSaveSelectionBtn = document.getElementById('bb-save-selection-btn');
+      const bbSaveBtn = document.getElementById('bb-save-btn');
+      const bbCancelBtn = document.getElementById('bb-cancel-btn');
+      const bbAddExampleBtn = document.getElementById('bb-add-example-btn');
+      if (sendBtn) {
+        sendBtn.addEventListener('click', handleChatSend);
+      }
+      if (inputEl) {
+        autoResizeChatInput(inputEl);
+        inputEl.addEventListener('input', () => {
+          autoResizeChatInput(inputEl);
+        });
+        inputEl.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleChatSend();
+          }
+        });
+      }
+      if (!boardState.board) {
+        renderBoardOutline(null);
+      }
+      renderChatMessages();
+      renderCurrentNodeContent();
+      updateBoardEditorControls();
+
+      if (bbEditBtn) {
+        bbEditBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          beginBlackboardEdit();
+        });
+      }
+      if (bbSaveSelectionBtn) {
+        bbSaveSelectionBtn.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          saveBlackboardSelectionToNotebook();
+        });
+        bbSaveSelectionBtn.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          saveBlackboardSelectionToNotebook();
+        });
+      }
+      if (bbSaveBtn) {
+        bbSaveBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          saveBlackboardEdit();
+        });
+      }
+      if (bbCancelBtn) {
+        bbCancelBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          cancelBlackboardEdit();
+        });
+      }
+      if (bbAddExampleBtn) {
+        bbAddExampleBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          addBlackboardExampleItem();
+        });
+      }
+
+      document.addEventListener('keydown', (event) => {
+        if (!boardEditor.editing) return;
+        const key = (event.key || '').toLowerCase();
+        if ((event.ctrlKey || event.metaKey) && key === 's') {
+          event.preventDefault();
+          saveBlackboardEdit();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          cancelBlackboardEdit();
+        }
+      });
+
+      document.addEventListener('selectionchange', () => {
+        updateSaveSelectionButtonState();
+      });
+
+      if (micBtn) {
+        // 输入框麦克风：语音识别 -> 文本（用来快速说出学习目标/问题）
+        micBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          toggleVoiceFallback();
+        });
+      }
+
+      if (voiceBtn) {
+        // “实时语音聊天”：优先启用 OpenAI Realtime 真语音（麦克风流 + 音频delta播放）
+        voiceBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          await loadBackendCaps();
+          if (backendCaps.hasOpenAIKey) {
+            try {
+              if (realtimeVoice.recording) {
+                await stopOpenAIRealtimeVoiceCall();
+              } else {
+                await startOpenAIRealtimeVoiceCall();
+              }
+            } catch (e) {
+              console.error('OpenAI Realtime 语音启动失败:', e);
+              window.alert(e?.message || (voiceLang === 'en' ? 'Failed to start OpenAI Realtime voice.' : '启动 OpenAI Realtime 真语音失败。'));
+              try { await stopOpenAIRealtimeVoiceCall(); } catch (_) { /* ignore */ }
+            }
+            return;
+          }
+          // 没有 Realtime 时，回退语音识别->文本
+          toggleVoiceFallback();
+        });
+      }
+
+      if (endCallBtn) {
+        endCallBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          if (realtimeVoice.recording) {
+            try { forceStopOpenAIRealtimeVoiceCall(); } catch (e) { /* ignore */ }
+          }
+          persistSessionToRecords('end_call');
+          window.location.href = 'ai语言学习平台-主页.html';
+        });
+      }
+
+      window.addEventListener('beforeunload', () => {
+        if (realtimeVoice.recording) {
+          try { forceStopOpenAIRealtimeVoiceCall(); } catch (e) { /* ignore */ }
+        }
+        persistSessionToRecords('beforeunload');
+      });
+
+      loadBackendCaps();
+    }
+
+    (function initSessionReplay() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const sessionParam = params.get('session');
+        if (!sessionParam) return;
+        const archive = loadJsonStorage(SESSION_ARCHIVE_KEY, {});
+        let session = archive && typeof archive === 'object'
+          ? archive[sessionParam]
+          : null;
+        if (!session) {
+          const raw = localStorage.getItem('linguify-last-session');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.id === sessionParam) {
+              session = parsed;
+            }
+          }
+        }
+        if (!session) return;
+        sessionRuntime.replayLoaded = true;
+
+        const wrapper = document.getElementById('main-wrapper');
+        if (sessionParam && wrapper && !wrapper.classList.contains('is-split')) {
+          toggleMode();
+        }
+
+        const restoredMessages = [];
+        if (Array.isArray(session.messages)) {
+          session.messages.forEach((msg) => {
+            if (!msg || typeof msg !== 'object') return;
+            const text = (msg.text || '').toString().trim();
+            if (!text) return;
+            restoredMessages.push({
+              role: normalizeMessageRole(msg.role),
+              text,
+              ts: msg.ts || new Date().toISOString()
+            });
+          });
+        }
+        if (restoredMessages.length) {
+          sessionRuntime.messages = restoredMessages.slice(-300);
+          renderChatMessages();
+        }
+
+        if (session.board && typeof session.board === 'object') {
+          renderBoard(session.board);
+        }
+        } catch (e) {
+        // ignore parse errors
+      }
+    })();
+
+    initBoardInteractions();
+  </script>
+</body>
+</html>

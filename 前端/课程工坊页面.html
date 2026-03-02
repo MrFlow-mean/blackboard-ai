@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linguify Course Workshop - App Store Style</title>
+    <!-- EN: zh-CN UI strings on this page have English equivalents in the embedded i18n dictionary (look for the 'en' section). -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        h1, h2, h3, .font-display {
+            font-family: 'Outfit', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 2rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .glass-header {
+            background: rgba(248, 250, 252, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .nav-workshop-icon {
+            filter: grayscale(1);
+            opacity: 0.65;
+            mix-blend-mode: multiply;
+            transition: filter 0.2s ease, opacity 0.2s ease;
+        }
+        .nav-workshop-active .nav-workshop-icon {
+            filter: none;
+            opacity: 1;
+            mix-blend-mode: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-[#f8fafc] flex">
+        <!-- Sidebar Navigation -->
+        <aside class="w-72 h-screen sticky top-0 border-r border-slate-200 bg-white/50 backdrop-blur-md px-6 py-8 flex flex-col gap-8">
+            <a id="developer-cta" href="课程开发者注册.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-sky-500 text-white font-semibold shadow-lg shadow-sky-200 hover:bg-sky-600 transition-all">
+                <iconify-icon icon="lucide:pen-square" class="text-xl"></iconify-icon>
+                <span data-i18n="workshop_dev_cta">注册成为课程开发者</span>
+            </a>
+
+            <nav class="flex-1 space-y-1">
+                <a id="nav-discover" href="#" class="flex items-center gap-3 px-4 py-3 bg-sky-50 text-sky-600 rounded-2xl font-semibold transition-all">
+                    <iconify-icon icon="lucide:compass"></iconify-icon>
+                    <span data-i18n="nav_discover">发现课程</span>
+                </a>
+                <a id="nav-languages" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                    <iconify-icon icon="lucide:languages"></iconify-icon>
+                    <span data-i18n="nav_languages">语言学习</span>
+                </a>
+                <a id="nav-science" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                    <iconify-icon icon="lucide:microscope"></iconify-icon>
+                    <span data-i18n="nav_science">自然科学</span>
+                </a>
+                <a id="nav-humanities" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                    <iconify-icon icon="lucide:book-open"></iconify-icon>
+                    <span data-i18n="nav_humanities">人文社科</span>
+                </a>
+                <a id="nav-cs" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                    <iconify-icon icon="lucide:code-2"></iconify-icon>
+                    <span data-i18n="nav_cs">计算机科学</span>
+                </a>
+            </nav>
+
+            <div class="mt-auto">
+                <div class="p-4 glass-card bg-sky-600 text-white flex flex-col gap-3 rounded-[1.5rem] mb-6">
+                    <p class="text-xs font-medium opacity-80 uppercase tracking-wider" data-i18n="premium_label">Premium</p>
+                    <p class="text-sm font-semibold" data-i18n="premium_desc">解锁所有高级课程</p>
+                    <button id="sidebar-upgrade-btn" class="w-full py-2 bg-white text-sky-600 rounded-xl text-sm font-bold shadow-md" data-i18n="premium_upgrade">立即升级</button>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 rounded-2xl cursor-pointer transition-all">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-8 h-8 rounded-full bg-slate-200" alt="Avatar">
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-sm font-semibold text-slate-800 truncate">Alex Rivera</p>
+                        <p class="text-xs text-slate-400 truncate">alex@linguify.com</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-10 pb-28 max-w-[1160px] mx-auto">
+            <!-- Search & Filter Bar -->
+            <header class="flex items-center justify-between mb-12">
+                <div class="flex-1 max-w-xl relative">
+                    <iconify-icon icon="lucide:search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></iconify-icon>
+                    <input type="text" placeholder="搜索课程、主题或导师..." data-i18n-placeholder="search_placeholder" class="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-slate-700">
+                </div>
+                <div class="flex items-center gap-4 ml-8">
+                    <button id="filter-btn" class="flex items-center gap-2 px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-600 font-medium hover:bg-slate-50 transition-all">
+                        <iconify-icon icon="lucide:sliders-horizontal"></iconify-icon>
+                        <span data-i18n="filter_btn">筛选</span>
+                    </button>
+                    <div class="h-10 w-[1px] bg-slate-200"></div>
+                    <button id="cart-btn" class="relative p-3.5 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all">
+                        <iconify-icon icon="lucide:shopping-bag" class="text-xl"></iconify-icon>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Featured Banner Section -->
+            <section class="mb-16">
+                <div class="relative h-[400px] w-full rounded-[2.5rem] overflow-hidden group">
+                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Featured Hero">
+                    <div class="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/40 to-transparent flex flex-col justify-center px-12">
+                        <span class="px-4 py-1.5 bg-sky-600/30 backdrop-blur-md text-white text-xs font-bold uppercase tracking-widest rounded-full w-fit mb-6" data-i18n="hero_tag">本周精选</span>
+                        <h2 class="text-5xl font-extrabold text-white font-display mb-4 leading-tight" data-i18n-html="hero_title">掌握法式浪漫：<br>零基础入门法语之旅</h2>
+                        <p class="text-slate-200 text-lg max-w-lg mb-8" data-i18n="hero_desc">通过沉浸式互动场景，在 30 天内掌握法语核心词汇与日常对话能力。</p>
+                        <div class="flex items-center gap-4">
+                            <button id="hero-enroll-btn" data-open-pack data-pack-key="pack_hero" data-pack-name="掌握法式浪漫：零基础入门法语之旅" class="px-8 py-4 bg-white text-slate-900 rounded-2xl font-bold shadow-xl shadow-slate-950/20 hover:bg-slate-100 transition-all flex items-center gap-2">
+                                <span data-i18n="hero_cta">立即报名</span>
+                                <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+                            </button>
+                            
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Categories Horizontal Shelf -->
+            <section class="mb-16">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800 font-display" data-i18n="section_categories">按类别探索</h3>
+                    <a id="view-all-categories" href="#" class="text-sky-600 font-semibold hover:underline flex items-center gap-1">
+                        <span data-i18n="view_all">查看全部</span>
+                        <iconify-icon icon="lucide:chevron-right"></iconify-icon>
+                    </a>
+                </div>
+                <div class="grid grid-cols-4 gap-6">
+                    <div class="group p-6 glass-card bg-sky-50 border-sky-100/50 hover:bg-sky-100 transition-all cursor-pointer">
+                        <div class="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
+                            <iconify-icon icon="lucide:calculator" class="text-3xl"></iconify-icon>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_science_title">理科前沿</h4>
+                        <p class="text-sm text-slate-500" data-i18n="cat_science_desc">数学、物理、生物</p>
+                    </div>
+                    <div class="group p-6 glass-card bg-pink-50 border-pink-100/50 hover:bg-pink-100 transition-all cursor-pointer">
+                        <div class="w-14 h-14 bg-pink-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
+                            <iconify-icon icon="lucide:feather" class="text-3xl"></iconify-icon>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_humanities_title">文科之美</h4>
+                        <p class="text-sm text-slate-500" data-i18n="cat_humanities_desc">文学、历史、哲学</p>
+                    </div>
+                    <div class="group p-6 glass-card bg-emerald-50 border-emerald-100/50 hover:bg-emerald-100 transition-all cursor-pointer">
+                        <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
+                            <iconify-icon icon="lucide:globe-2" class="text-3xl"></iconify-icon>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_languages_title">全球语言</h4>
+                        <p class="text-sm text-slate-500" data-i18n="cat_languages_desc">英语、日语、西班牙语</p>
+                    </div>
+                    <div class="group p-6 glass-card bg-amber-50 border-amber-100/50 hover:bg-amber-100 transition-all cursor-pointer">
+                        <div class="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
+                            <iconify-icon icon="lucide:cpu" class="text-3xl"></iconify-icon>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_tech_title">信息技术</h4>
+                        <p class="text-sm text-slate-500" data-i18n="cat_tech_desc">算法、AI、软件开发</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Course Grid Section -->
+            <section class="mb-16">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800 font-display" data-i18n="section_trending">热门推荐</h3>
+                    <div class="flex gap-2">
+                        <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+                            <iconify-icon icon="lucide:chevron-left"></iconify-icon>
+                        </button>
+                        <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100">
+                            <iconify-icon icon="lucide:chevron-right"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-8">
+                    <!-- Course Card 1 -->
+                    <div class="group bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all border border-slate-100">
+                        <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
+                            <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="Math course">
+                            <div class="absolute top-3 right-3">
+                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                    <iconify-icon icon="lucide:heart"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="px-2">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-3 py-1 bg-sky-50 text-sky-600 text-[10px] font-bold rounded-full uppercase" data-i18n="tag_science">理科</span>
+                                <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                                    <iconify-icon icon="lucide:star" class="fill-amber-500"></iconify-icon>
+                                    <span>4.9</span>
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-slate-800 mb-2" data-i18n="course_calc_title">微积分从零到一</h4>
+                            <p class="text-slate-400 text-sm mb-6" data-i18n="course_calc_desc">由常春藤名师授课，深入浅出讲解导数、积分与级数。</p>
+                            <div class="flex items-center justify-end border-t border-slate-50 pt-5">
+                                <button id="buy-calc-course" data-open-pack data-pack-key="pack_calc" data-pack-name="微积分从零到一" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-colors shadow-lg shadow-sky-100">
+                                    <span data-i18n="buy_course">购买课程</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Card 2 -->
+                    <div class="group bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all border border-slate-100">
+                        <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
+                            <img src="https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="English course">
+                            <div class="absolute top-3 right-3">
+                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                    <iconify-icon icon="lucide:heart"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="px-2">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase" data-i18n="tag_language">语言</span>
+                                <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                                    <iconify-icon icon="lucide:star" class="fill-amber-500"></iconify-icon>
+                                    <span>4.8</span>
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-slate-800 mb-2" data-i18n="course_english_title">商务英语口语进阶</h4>
+                            <p class="text-slate-400 text-sm mb-6" data-i18n="course_english_desc">50个职场实战场景，带你自信开口，提升职场竞争力。</p>
+                            <div class="flex items-center justify-end border-t border-slate-50 pt-5">
+                                <button id="buy-english-course" data-open-pack data-pack-key="pack_english" data-pack-name="商务英语口语进阶" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-colors shadow-lg shadow-sky-100">
+                                    <span data-i18n="buy_course">购买课程</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Card 3 -->
+                    <div class="group bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all border border-slate-100">
+                        <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
+                            <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="Physics course">
+                            <div class="absolute top-3 right-3">
+                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                    <iconify-icon icon="lucide:heart"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="px-2">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full uppercase" data-i18n="tag_science">理科</span>
+                                <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                                    <iconify-icon icon="lucide:star" class="fill-amber-500"></iconify-icon>
+                                    <span>5.0</span>
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-slate-800 mb-2" data-i18n="course_quantum_title">量子力学导引</h4>
+                            <p class="text-slate-400 text-sm mb-6" data-i18n="course_quantum_desc">揭开微观世界的奥秘，适合所有对科学充满好奇的学习者。</p>
+                            <div class="flex items-center justify-end border-t border-slate-50 pt-5">
+                                <button id="buy-physics-course" data-open-pack data-pack-key="pack_quantum" data-pack-name="量子力学导引" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-colors shadow-lg shadow-sky-100">
+                                    <span data-i18n="buy_course">购买课程</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sub-Categories Row -->
+            <section class="mb-16">
+                <h3 class="text-2xl font-bold text-slate-800 font-display mb-8" data-i18n="section_more">更多学科</h3>
+                <div class="flex flex-wrap gap-3">
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_bio">生物科学</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_chem">化学实验</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_history">世界历史</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_econ">宏观经济学</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_politics">政治哲学</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_geo">地理测绘</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_spanish">西班牙语 B1</button>
+                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_python">Python 数据挖掘</button>
+                </div>
+            </section>
+
+            <!-- Trending Subjects Ranking -->
+            <section class="grid grid-cols-2 gap-12 mb-20">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800 font-display mb-8" data-i18n="section_ranking">热门排行榜</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 p-4 hover:bg-white hover:shadow-md rounded-[1.5rem] transition-all group">
+                            <span class="text-2xl font-black text-slate-300 font-display group-hover:text-sky-500 transition-colors">01</span>
+                            <div class="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/shapes/svg?seed=Math" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-slate-800" data-i18n="rank_1_title">线性代数实战案例</p>
+                                <p class="text-xs text-slate-400" data-i18n="rank_1_meta">理科 • 1.2w 人在学</p>
+                            </div>
+                            <button data-open-pack data-pack-key="pack_rank_1" data-pack-name="线性代数实战案例" class="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-full text-xs font-bold group-hover:bg-sky-600 group-hover:text-white transition-all uppercase" data-i18n="get_btn">获取</button>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 hover:bg-white hover:shadow-md rounded-[1.5rem] transition-all group">
+                            <span class="text-2xl font-black text-slate-300 font-display group-hover:text-sky-500 transition-colors">02</span>
+                            <div class="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/shapes/svg?seed=Design" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-slate-800" data-i18n="rank_2_title">UI 设计思维与系统</p>
+                                <p class="text-xs text-slate-400" data-i18n="rank_2_meta">艺术 • 8.5k 人在学</p>
+                            </div>
+                            <button data-open-pack data-pack-key="pack_rank_2" data-pack-name="UI 设计思维与系统" class="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-full text-xs font-bold group-hover:bg-sky-600 group-hover:text-white transition-all uppercase" data-i18n="get_btn">获取</button>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 hover:bg-white hover:shadow-md rounded-[1.5rem] transition-all group">
+                            <span class="text-2xl font-black text-slate-300 font-display group-hover:text-sky-500 transition-colors">03</span>
+                            <div class="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/shapes/svg?seed=Art" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-slate-800" data-i18n="rank_3_title">世界现代史专题</p>
+                                <p class="text-xs text-slate-400" data-i18n="rank_3_meta">人文 • 5.1k 人在学</p>
+                            </div>
+                            <button data-open-pack data-pack-key="pack_rank_3" data-pack-name="世界现代史专题" class="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-full text-xs font-bold group-hover:bg-sky-600 group-hover:text-white transition-all uppercase" data-i18n="get_btn">获取</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-10 glass-card bg-gradient-to-br from-sky-500 to-sky-700 text-white flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-3xl font-extrabold font-display mb-4" data-i18n-html="member_title">订阅会员，<br>无限畅学。</h3>
+                        <p class="opacity-80 leading-relaxed mb-6" data-i18n="member_desc">加入 Linguify Plus，立即可访问 500+ 精选课程，尊享 4K 超清画质与导师答疑权益。</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <iconify-icon icon="lucide:check-circle-2" class="text-emerald-400"></iconify-icon>
+                            <span class="text-sm" data-i18n="member_benefit_1">全站课程免费学习</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <iconify-icon icon="lucide:check-circle-2" class="text-emerald-400"></iconify-icon>
+                            <span class="text-sm" data-i18n="member_benefit_2">离线缓存视频课件</span>
+                        </div>
+                        <button id="cta-plus-btn" class="w-full mt-4 py-4 bg-white text-sky-600 rounded-2xl font-bold shadow-xl hover:scale-[1.02] transition-transform" data-i18n="member_cta">开始 7 天免费试用</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glass-header px-6 py-3 pb-6 flex items-center justify-around border-t border-slate-100">
+        <a href="ai语言学习平台-主页.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
+            <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+            <span class="text-[10px] font-bold uppercase tracking-wider" data-i18n="nav_home">首页</span>
+        </a>
+        <a href="课程工坊页面.html" class="nav-workshop-active flex flex-col items-center gap-1 text-sky-600 transition-colors">
+            <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+            <span class="text-[10px] font-bold uppercase tracking-wider" data-i18n="nav_workshop">课程工坊</span>
+        </a>
+        <a href="我的设置页面.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
+            <iconify-icon icon="lucide:settings" class="text-2xl"></iconify-icon>
+            <span class="text-[10px] font-bold uppercase tracking-wider" data-i18n="nav_settings">设置</span>
+        </a>
+    </nav>
+    <script>
+        (function () {
+            const LANG_STORAGE_KEY = 'ui-language';
+            const UI_I18N = {
+                'zh-CN': {
+                    page_title: '课程工坊 - Linguify',
+                    workshop_dev_cta: '注册成为课程开发者',
+                    nav_discover: '发现课程',
+                    nav_languages: '语言学习',
+                    nav_science: '自然科学',
+                    nav_humanities: '人文社科',
+                    nav_cs: '计算机科学',
+                    premium_label: 'Premium',
+                    premium_desc: '解锁所有高级课程',
+                    premium_upgrade: '立即升级',
+                    search_placeholder: '搜索课程、主题或导师...',
+                    filter_btn: '筛选',
+                    hero_tag: '本周精选',
+                    hero_title: '掌握法式浪漫：<br>零基础入门法语之旅',
+                    hero_desc: '通过沉浸式互动场景，在 30 天内掌握法语核心词汇与日常对话能力。',
+                    hero_cta: '立即报名',
+                    section_categories: '按类别探索',
+                    view_all: '查看全部',
+                    cat_science_title: '理科前沿',
+                    cat_science_desc: '数学、物理、生物',
+                    cat_humanities_title: '文科之美',
+                    cat_humanities_desc: '文学、历史、哲学',
+                    cat_languages_title: '全球语言',
+                    cat_languages_desc: '英语、日语、西班牙语',
+                    cat_tech_title: '信息技术',
+                    cat_tech_desc: '算法、AI、软件开发',
+                    section_trending: '热门推荐',
+                    tag_science: '理科',
+                    tag_language: '语言',
+                    course_calc_title: '微积分从零到一',
+                    course_calc_desc: '由常春藤名师授课，深入浅出讲解导数、积分与级数。',
+                    course_english_title: '商务英语口语进阶',
+                    course_english_desc: '50个职场实战场景，带你自信开口，提升职场竞争力。',
+                    course_quantum_title: '量子力学导引',
+                    course_quantum_desc: '揭开微观世界的奥秘，适合所有对科学充满好奇的学习者。',
+                    buy_course: '购买课程',
+                    section_more: '更多学科',
+                    chip_bio: '生物科学',
+                    chip_chem: '化学实验',
+                    chip_history: '世界历史',
+                    chip_econ: '宏观经济学',
+                    chip_politics: '政治哲学',
+                    chip_geo: '地理测绘',
+                    chip_spanish: '西班牙语 B1',
+                    chip_python: 'Python 数据挖掘',
+                    section_ranking: '热门排行榜',
+                    rank_1_title: '线性代数实战案例',
+                    rank_1_meta: '理科 • 1.2w 人在学',
+                    rank_2_title: 'UI 设计思维与系统',
+                    rank_2_meta: '艺术 • 8.5k 人在学',
+                    rank_3_title: '世界现代史专题',
+                    rank_3_meta: '人文 • 5.1k 人在学',
+                    get_btn: '获取',
+                    member_title: '订阅会员，<br>无限畅学。',
+                    member_desc: '加入 Linguify Plus，立即可访问 500+ 精选课程，尊享 4K 超清画质与导师答疑权益。',
+                    member_benefit_1: '全站课程免费学习',
+                    member_benefit_2: '离线缓存视频课件',
+                    member_cta: '开始 7 天免费试用',
+                    nav_home: '首页',
+                    nav_workshop: '课程工坊',
+                    nav_settings: '设置',
+                    pack_hero: '掌握法式浪漫：零基础入门法语之旅',
+                    pack_calc: '微积分从零到一',
+                    pack_english: '商务英语口语进阶',
+                    pack_quantum: '量子力学导引',
+                    pack_rank_1: '线性代数实战案例',
+                    pack_rank_2: 'UI 设计思维与系统',
+                    pack_rank_3: '世界现代史专题'
+                },
+                'en': {
+                    page_title: 'Course Workshop - Linguify',
+                    workshop_dev_cta: 'Register as a Course Creator',
+                    nav_discover: 'Discover',
+                    nav_languages: 'Languages',
+                    nav_science: 'Natural Science',
+                    nav_humanities: 'Humanities',
+                    nav_cs: 'Computer Science',
+                    premium_label: 'Premium',
+                    premium_desc: 'Unlock all premium courses',
+                    premium_upgrade: 'Upgrade Now',
+                    search_placeholder: 'Search courses, topics, or instructors...',
+                    filter_btn: 'Filter',
+                    hero_tag: 'Featured This Week',
+                    hero_title: 'Master French Romance:<br>Beginner\'s French Journey',
+                    hero_desc: 'Learn core French vocabulary and everyday conversation in 30 days through immersive scenarios.',
+                    hero_cta: 'Enroll Now',
+                    section_categories: 'Explore by Category',
+                    view_all: 'View All',
+                    cat_science_title: 'Science Frontier',
+                    cat_science_desc: 'Math, Physics, Biology',
+                    cat_humanities_title: 'Humanities & Arts',
+                    cat_humanities_desc: 'Literature, History, Philosophy',
+                    cat_languages_title: 'Global Languages',
+                    cat_languages_desc: 'English, Japanese, Spanish',
+                    cat_tech_title: 'Information Technology',
+                    cat_tech_desc: 'Algorithms, AI, Software Development',
+                    section_trending: 'Trending Picks',
+                    tag_science: 'Science',
+                    tag_language: 'Languages',
+                    course_calc_title: 'Calculus From Zero to One',
+                    course_calc_desc: 'Taught by Ivy League instructors with clear explanations of derivatives, integrals, and series.',
+                    course_english_title: 'Business English Speaking',
+                    course_english_desc: '50 workplace scenarios to build confidence and sharpen your communication.',
+                    course_quantum_title: 'Intro to Quantum Mechanics',
+                    course_quantum_desc: 'Unlock the microscopic world, perfect for curious science learners.',
+                    buy_course: 'Buy Course',
+                    section_more: 'More Subjects',
+                    chip_bio: 'Biology',
+                    chip_chem: 'Chemistry Lab',
+                    chip_history: 'World History',
+                    chip_econ: 'Macroeconomics',
+                    chip_politics: 'Political Philosophy',
+                    chip_geo: 'Geographic Surveying',
+                    chip_spanish: 'Spanish B1',
+                    chip_python: 'Python Data Mining',
+                    section_ranking: 'Top Charts',
+                    rank_1_title: 'Linear Algebra Case Studies',
+                    rank_1_meta: 'Science • 12k learners',
+                    rank_2_title: 'UI Design Thinking & Systems',
+                    rank_2_meta: 'Arts • 8.5k learners',
+                    rank_3_title: 'Modern World History Focus',
+                    rank_3_meta: 'Humanities • 5.1k learners',
+                    get_btn: 'Get',
+                    member_title: 'Subscribe for<br>Unlimited Learning.',
+                    member_desc: 'Join Linguify Plus to access 500+ curated courses with 4K video and mentor Q&A.',
+                    member_benefit_1: 'All courses included',
+                    member_benefit_2: 'Offline video downloads',
+                    member_cta: 'Start 7-Day Free Trial',
+                    nav_home: 'Home',
+                    nav_workshop: 'Course Workshop',
+                    nav_settings: 'Settings',
+                    pack_hero: 'Master French Romance: Beginner\'s French Journey',
+                    pack_calc: 'Calculus From Zero to One',
+                    pack_english: 'Business English Speaking',
+                    pack_quantum: 'Intro to Quantum Mechanics',
+                    pack_rank_1: 'Linear Algebra Case Studies',
+                    pack_rank_2: 'UI Design Thinking & Systems',
+                    pack_rank_3: 'Modern World History Focus'
+                }
+            };
+
+            const getLang = () => localStorage.getItem(LANG_STORAGE_KEY) || 'zh-CN';
+            const t = (key, lang) => {
+                const dict = UI_I18N[lang] || UI_I18N['zh-CN'];
+                return dict[key] || UI_I18N['zh-CN'][key] || '';
+            };
+
+            const applyTranslations = (lang) => {
+                document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.dataset.i18n;
+                    el.textContent = t(key, lang);
+                });
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.dataset.i18nPlaceholder;
+                    el.setAttribute('placeholder', t(key, lang));
+                });
+                document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                    const key = el.dataset.i18nHtml;
+                    el.innerHTML = t(key, lang);
+                });
+                document.querySelectorAll('[data-pack-key]').forEach(el => {
+                    const key = el.dataset.packKey;
+                    const name = t(key, lang);
+                    if (name) el.setAttribute('data-pack-name', name);
+                });
+                document.title = t('page_title', lang);
+            };
+
+            const lang = getLang();
+            applyTranslations(lang);
+
+            const buttons = document.querySelectorAll('[data-open-pack]');
+            if (!buttons.length) return;
+            buttons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const name = (btn.getAttribute('data-pack-name') || '').trim();
+                    const params = new URLSearchParams();
+                    params.set('openPack', '1');
+                    if (name) params.set('packName', name);
+                    window.location.href = `ai语言学习平台-主页.html?${params.toString()}`;
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

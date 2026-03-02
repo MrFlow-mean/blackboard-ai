@@ -1,0 +1,26 @@
+{
+  "name": "linguify-realtime-backend",
+  "version": "1.0.0",
+  "description": "实时语音对话后端服务器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node realtime-audio-server.js",
+    "start:realtime": "node realtime-audio-server.js",
+    "dev": "nodemon realtime-audio-server.js",
+    "check": "node check-server.js"
+  },
+  "keywords": [
+    "websocket",
+    "realtime",
+    "ai",
+    "voice-chat"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

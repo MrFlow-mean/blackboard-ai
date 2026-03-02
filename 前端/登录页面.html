@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="view-transition" content="same-origin">
+  <!-- EN: zh-CN UI strings on this page have English equivalents in the LOGIN_I18N['en'] dictionary below. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://api.fontshare.com/v2/css?f[]=outfit@400,500,600,700&f[]=plus-jakarta-sans@400,500,600&display=swap');
+    :root { --primary: #0ea5e9; --bg-grid: rgba(14, 165, 233, 0.05); }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.1); }
+    .grid-bg { background-image: radial-gradient(circle at 1px 1px, var(--bg-grid) 1px, transparent 0); background-size: 24px 24px; }
+    .stagger-in > * { opacity: 0; transform: translateY(10px); animation: fadeInUp 0.5s ease forwards; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    .delay-6 { animation-delay: 0.6s; }
+    .delay-7 { animation-delay: 0.7s; }
+    @view-transition { navigation: auto; }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen bg-slate-50 grid-bg flex flex-col items-center justify-center p-6 sm:p-8">
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-sky-200/30 blur-[100px] rounded-full"></div>
+      <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-200/30 blur-[100px] rounded-full"></div>
+    </div>
+    <div class="w-full max-w-md relative z-10">
+      <div class="text-center mb-10 stagger-in">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-500 shadow-lg shadow-sky-500/30 mb-6 mx-auto hover:rotate-6 transition-transform duration-300">
+          <iconify-icon icon="lucide:languages" class="text-3xl text-white"></iconify-icon>
+        </div>
+        <h1 class="font-display text-4xl font-bold text-slate-900 tracking-tight mb-2 delay-1">Linguify</h1>
+        <p class="text-slate-500 font-medium delay-2" data-i18n="login_tagline">AI 驱动的语言学习平台</p>
+      </div>
+      <div class="glass-card rounded-[2.5rem] p-8 sm:p-10 shadow-xl">
+        <div class="mb-8 stagger-in">
+          <h2 class="text-2xl font-bold text-slate-900 delay-3" data-i18n="login_title">开始你的语言学习之旅</h2>
+          <p class="text-slate-500 text-sm mt-1 delay-4" data-i18n="login_desc">选择你喜欢的登录方式</p>
+        </div>
+        <div class="grid grid-cols-1 gap-3 stagger-in">
+          <a id="auth-apple-btn" href="#" class="flex items-center justify-center gap-3 w-full py-3.5 px-4 bg-black text-white rounded-2xl font-semibold hover:bg-neutral-800 active:scale-[0.98] transition-all duration-200 delay-5 shadow-sm" data-i18n="login_apple">
+            <iconify-icon icon="logos:apple" class="text-xl invert"></iconify-icon>
+            Apple 登录
+          </a>
+          <a id="auth-google-btn" href="#" class="flex items-center justify-center gap-3 w-full py-3.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-semibold hover:bg-slate-50 active:scale-[0.98] transition-all duration-200 delay-5 shadow-sm" data-i18n="login_google">
+            <iconify-icon icon="logos:google-icon" class="text-xl"></iconify-icon>
+            Google 登录
+          </a>
+          <div class="grid grid-cols-3 gap-3 delay-6">
+            <a id="auth-ms-btn" href="#" class="flex items-center justify-center py-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 active:scale-[0.95] transition-all duration-200" title="Microsoft 登录" data-i18n-title="login_ms">
+              <iconify-icon icon="logos:microsoft-icon" class="text-2xl"></iconify-icon>
+            </a>
+            <a id="auth-meta-btn" href="#" class="flex items-center justify-center py-4 bg-[#1877F2]/10 border border-[#1877F2]/20 rounded-2xl hover:bg-[#1877F2]/20 active:scale-[0.95] transition-all duration-200" title="Meta 登录" data-i18n-title="login_meta">
+              <iconify-icon icon="logos:facebook" class="text-2xl"></iconify-icon>
+            </a>
+            <a id="auth-wechat-btn" href="#" class="flex items-center justify-center py-4 bg-[#07C160]/10 border border-[#07C160]/20 rounded-2xl hover:bg-[#07C160]/20 active:scale-[0.95] transition-all duration-200" title="微信登录" data-i18n-title="login_wechat">
+              <iconify-icon icon="logos:wechat" class="text-2xl"></iconify-icon>
+            </a>
+          </div>
+          <div class="relative my-6 delay-7">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-slate-200"></div>
+            </div>
+            <div class="relative flex justify-center text-xs uppercase">
+              <span class="bg-white px-3 text-slate-400 font-medium" data-i18n="login_or">或通过以下方式</span>
+            </div>
+          </div>
+          <a id="auth-email-btn" href="#" class="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-sky-50 text-sky-600 rounded-2xl font-semibold hover:bg-sky-100 active:scale-[0.98] transition-all duration-200 delay-7" data-i18n="login_email">
+            <iconify-icon icon="lucide:mail" class="text-xl"></iconify-icon>
+            邮箱或手机号登录
+          </a>
+        </div>
+      </div>
+      <div class="mt-10 text-center stagger-in">
+        <p class="text-slate-500 text-sm mb-4 delay-7">
+          <span data-i18n="login_no_account">还没有账号？</span>
+          <a id="register-link" href="#" class="text-sky-500 font-bold hover:underline" data-i18n="login_register">立即注册</a>
+        </p>
+        <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-slate-400 font-medium delay-7">
+          <a id="footer-terms-link" href="#" class="hover:text-slate-600 transition-colors" data-i18n="login_terms">服务条款</a>
+          <span class="hidden sm:inline">•</span>
+          <a id="footer-privacy-link" href="#" class="hover:text-slate-600 transition-colors" data-i18n="login_privacy">隐私政策</a>
+          <span class="hidden sm:inline">•</span>
+          <a id="footer-help-link" href="#" class="hover:text-slate-600 transition-colors" data-i18n="login_help">帮助中心</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LOGIN_I18N = {
+      'zh-CN': {
+        login_tagline: 'AI 驱动的语言学习平台',
+        login_title: '开始你的语言学习之旅',
+        login_desc: '选择你喜欢的登录方式',
+        login_apple: 'Apple 登录',
+        login_google: 'Google 登录',
+        login_ms: 'Microsoft 登录',
+        login_meta: 'Meta 登录',
+        login_wechat: '微信登录',
+        login_or: '或通过以下方式',
+        login_email: '邮箱或手机号登录',
+        login_no_account: '还没有账号？',
+        login_register: '立即注册',
+        login_terms: '服务条款',
+        login_privacy: '隐私政策',
+        login_help: '帮助中心',
+        title: 'Linguify - 登录'
+      },
+      'en': {
+        login_tagline: 'AI-powered language learning platform',
+        login_title: 'Start your language learning journey',
+        login_desc: 'Choose your preferred sign-in method',
+        login_apple: 'Sign in with Apple',
+        login_google: 'Sign in with Google',
+        login_ms: 'Sign in with Microsoft',
+        login_meta: 'Sign in with Meta',
+        login_wechat: 'Sign in with WeChat',
+        login_or: 'Or continue with',
+        login_email: 'Sign in with Email or Phone',
+        login_no_account: 'No account yet?',
+        login_register: 'Sign up now',
+        login_terms: 'Terms of Service',
+        login_privacy: 'Privacy Policy',
+        login_help: 'Help Center',
+        title: 'Linguify - Sign In'
+      }
+    };
+
+    const loginLang = localStorage.getItem('ui-language') || 'zh-CN';
+    const loginDict = LOGIN_I18N[loginLang] || LOGIN_I18N['zh-CN'];
+    document.documentElement.lang = loginLang === 'en' ? 'en' : 'zh-CN';
+    document.title = loginDict.title;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (loginDict[key]) {
+        el.textContent = loginDict[key];
+      }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.dataset.i18nTitle;
+      if (loginDict[key]) {
+        el.setAttribute('title', loginDict[key]);
+      }
+    });
+  </script>
+</body>
+</html>

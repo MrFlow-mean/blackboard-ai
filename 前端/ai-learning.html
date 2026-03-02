@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 语言学习</title>
+  <!-- EN: Page title means "AI Language Learning". This page includes a simple zh→en text swap when ui-language=en. -->
+  <style>
+    :root {
+      --primary: #4c6fff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      margin: 0;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .container {
+      width: min(900px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    header {
+      text-align: center;
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    }
+    .tips {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .tip {
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px dashed var(--border);
+      color: #374151;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      padding: 12px 18px;
+      font-size: 16px;
+    }
+    .primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .secondary {
+      background: #eef2ff;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI 语言学习</h1>
+      <p>在这里和 AI 进行语言对话练习</p>
+    </header>
+
+    <section class="card">
+      <h2>今日练习建议</h2>
+      <div class="tips">
+        <div class="tip">用目标语言做 3 句自我介绍</div>
+        <div class="tip">练习 5 个日常场景短句</div>
+        <div class="tip">复习昨天收藏的重点知识</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>开始对话</h2>
+      <p>点击下方按钮即可进入 AI 对话模式（可在后续接入聊天功能）。</p>
+      <div class="actions">
+        <button class="primary" id="startChat">进入 AI 对话</button>
+        <button class="secondary" id="backHome">返回主页</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const uiLang = localStorage.getItem('ui-language') || 'zh-CN';
+    const alertText = uiLang === 'en' ? 'AI chat can be integrated here.' : '这里可以接入 AI 对话功能。';
+
+    document.getElementById("startChat").addEventListener("click", () => {
+      alert(alertText);
+    });
+    document.getElementById("backHome").addEventListener("click", () => {
+      window.location.href = "语言学习软件.html";
+    });
+  </script>
+
+  <script>
+    // Language switch (follows ui-language)
+    (function () {
+      const lang = localStorage.getItem('ui-language') || 'zh-CN';
+      if (lang !== 'en') return;
+
+      document.documentElement.lang = 'en';
+      document.title = 'AI Language Learning';
+
+      const map = {
+        'AI 语言学习': 'AI Language Learning',
+        '在这里和 AI 进行语言对话练习': 'Practice conversations with AI here',
+        '今日练习建议': 'Today’s Practice Suggestions',
+        '用目标语言做 3 句自我介绍': 'Introduce yourself in 3 sentences in your target language',
+        '练习 5 个日常场景短句': 'Practice 5 short daily-life phrases',
+        '复习昨天收藏的重点知识': 'Review yesterday’s saved key points',
+        '开始对话': 'Start Conversation',
+        '点击下方按钮即可进入 AI 对话模式（可在后续接入聊天功能）。': 'Click the button below to enter AI chat mode (chat integration can be added later).',
+        '进入 AI 对话': 'Enter AI Chat',
+        '返回主页': 'Back to Home'
+      };
+
+      document.querySelectorAll('h1,h2,p,button').forEach(el => {
+        const text = el.textContent.trim();
+        if (map[text]) {
+          el.textContent = map[text];
+        }
+      });
+
+      // Alert text handled in the main script above
+    })();
+  </script>
+</body>
+</html>

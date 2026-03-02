@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linguify - 订阅计划</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-display {
+            font-family: 'Outfit', sans-serif;
+        }
+        .grid-pattern {
+            background-image: radial-gradient(circle, #0ea5e9 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.05;
+        }
+        .glass-header {
+            background: #ffffff;
+            border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+        }
+        .nav-workshop-icon {
+            filter: grayscale(1);
+            opacity: 0.65;
+            mix-blend-mode: multiply;
+            transition: filter 0.2s ease, opacity 0.2s ease;
+        }
+        .nav-workshop-active .nav-workshop-icon {
+            filter: none;
+            opacity: 1;
+            mix-blend-mode: normal;
+        }
+        .price-card {
+            background: white;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(14, 165, 233, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .price-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .pro-card {
+            border: 2px solid #0ea5e9;
+            box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @view-transition { navigation: auto; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-slate-50 relative flex flex-col">
+        <!-- Background Texture -->
+        <div class="fixed inset-0 grid-pattern pointer-events-none"></div>
+
+        <!-- Header -->
+        <header class="sticky top-0 z-50 glass-header px-4 md:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="账单管理页面.html" onclick="if (history.length > 1) { history.back(); return false; }" id="back-btn" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                    <iconify-icon icon="lucide:arrow-left" class="text-2xl text-slate-700"></iconify-icon>
+                </a>
+                <h1 class="text-xl font-display font-bold text-slate-900 tracking-tight">订阅计划</h1>
+            </div>
+
+            <!-- Toggle -->
+            <div class="bg-slate-100 p-1 rounded-full flex items-center relative">
+                <button id="toggle-monthly" class="px-4 py-1.5 rounded-full text-sm font-semibold transition-all z-10 text-slate-900 bg-white shadow-sm">月度</button>
+                <button id="toggle-yearly" class="px-4 py-1.5 rounded-full text-sm font-semibold transition-all z-10 text-slate-500 hover:text-slate-900">
+                    年度
+                    <span class="ml-1 text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">节省 17%</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 py-10 pb-32">
+            <!-- Cards Container -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                
+                <!-- Card 1: Free -->
+                <div class="price-card p-8 flex flex-col animate-fade-in" style="animation-delay: 0.1s;">
+                    <h3 class="text-lg font-display font-bold text-slate-800 mb-2">基础版 (Free)</h3>
+                    <div class="mb-6">
+                        <span class="text-4xl font-display font-bold text-slate-900">¥0</span>
+                        <span class="text-slate-400"> / 月</span>
+                    </div>
+                    <ul class="space-y-4 flex-1 mb-8">
+                        <li class="flex items-start gap-3 text-sm text-slate-600">
+                            <iconify-icon icon="lucide:check" class="text-green-500 mt-0.5"></iconify-icon>
+                            <span>每日有限交流时长</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-400">
+                            <iconify-icon icon="lucide:x" class="text-slate-300 mt-0.5"></iconify-icon>
+                            <span>无学习模式功能</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-400">
+                            <iconify-icon icon="lucide:x" class="text-slate-300 mt-0.5"></iconify-icon>
+                            <span>有限课程包空间</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-400">
+                            <iconify-icon icon="lucide:x" class="text-slate-300 mt-0.5"></iconify-icon>
+                            <span>有限次数下载他人免费课程</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-400">
+                            <iconify-icon icon="lucide:x" class="text-slate-300 mt-0.5"></iconify-icon>
+                            <span>不能对他人课程评论评分</span>
+                        </li>
+                    </ul>
+                    <div class="mt-auto">
+                        <div class="w-full py-3 text-center bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">
+                            当前计划
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Pro -->
+                <div class="price-card pro-card p-8 flex flex-col relative animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full">
+                        最受欢迎
+                    </div>
+                    <h3 class="text-lg font-display font-bold text-slate-800 mb-2">专业版 (Pro)</h3>
+                    <div class="mb-6">
+                        <span id="pro-price" class="text-4xl font-display font-bold text-sky-600">¥150</span>
+                        <span class="text-slate-400"> / 月</span>
+                        <p id="pro-billing" class="text-xs text-slate-400 mt-1 opacity-0">按年计费</p>
+                    </div>
+                    <ul class="space-y-4 flex-1 mb-8">
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>每周25小时学习交流时长</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>苏格拉底、费曼等学习模式</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>支持上传图片、文档制作板书</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>无限下载他人课程</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>可申请注册为创作者</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-700">
+                            <iconify-icon icon="lucide:check" class="text-sky-500 mt-0.5"></iconify-icon>
+                            <span>优先客服支持</span>
+                        </li>
+                    </ul>
+                    <div class="mt-auto">
+                        <a href="#" id="upgrade-btn" class="block w-full py-3 text-center bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-200 transition-all active:scale-[0.98]">
+                            立即升级
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 3: Enterprise -->
+                <div class="price-card p-8 flex flex-col animate-fade-in" style="animation-delay: 0.3s;">
+                    <h3 class="text-lg font-display font-bold text-slate-800 mb-2">团队/企业版</h3>
+                    <div class="mb-6 h-[52px] flex items-center">
+                        <span class="text-2xl font-display font-bold text-slate-800">定制方案</span>
+                    </div>
+                    <p class="text-sm text-slate-500 mb-8">适用于学校、培训机构及大型企业用户。提供专属管理后台、多账号同步、定制化教学内容及 API 接入支持。</p>
+                    <div class="mt-auto">
+                        <a href="#" id="contact-sales-btn" class="block w-full py-3 text-center bg-white border-2 border-slate-200 hover:border-slate-800 text-slate-800 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
+                            联系销售
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table (Optional/Expandable) -->
+            <div class="max-w-4xl mx-auto">
+                <button id="toggle-comparison" class="w-full flex items-center justify-center gap-2 py-4 text-slate-500 hover:text-sky-600 font-semibold transition-colors">
+                    <span>查看详细功能对比</span>
+                    <iconify-icon icon="lucide:chevron-down" id="comparison-icon"></iconify-icon>
+                </button>
+                <div id="comparison-table" class="hidden overflow-x-auto mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100">
+                                <th class="px-6 py-4 text-sm font-bold text-slate-800">特性</th>
+                                <th class="px-6 py-4 text-sm font-bold text-slate-800">免费版</th>
+                                <th class="px-6 py-4 text-sm font-bold text-slate-800">专业版</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr>
+                                <td class="px-6 py-4 text-xs text-slate-600 font-medium">每日时长</td>
+                                <td class="px-6 py-4 text-xs text-slate-500">1小时</td>
+                                <td class="px-6 py-4 text-xs text-slate-500">25小时/周</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 text-xs text-slate-600 font-medium">学习模式</td>
+                                <td class="px-6 py-4 text-xs text-slate-400"><iconify-icon icon="lucide:minus"></iconify-icon></td>
+                                <td class="px-6 py-4 text-xs text-green-500"><iconify-icon icon="lucide:check-circle"></iconify-icon></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 text-xs text-slate-600 font-medium">AI 板书</td>
+                                <td class="px-6 py-4 text-xs text-slate-400"><iconify-icon icon="lucide:minus"></iconify-icon></td>
+                                <td class="px-6 py-4 text-xs text-green-500"><iconify-icon icon="lucide:check-circle"></iconify-icon></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Trust Badges -->
+            <div class="mt-16 text-center">
+                <div class="flex flex-wrap justify-center gap-8 mb-8">
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <iconify-icon icon="lucide:shield-check" class="text-xl"></iconify-icon>
+                        <span class="text-xs font-semibold">30天无风险退款</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <iconify-icon icon="lucide:calendar" class="text-xl"></iconify-icon>
+                        <span class="text-xs font-semibold">随时取消订阅</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <iconify-icon icon="lucide:help-circle" class="text-xl"></iconify-icon>
+                        <a href="#" class="text-xs font-semibold hover:text-sky-500 transition-colors">常见问题解答 (FAQ)</a>
+                    </div>
+                </div>
+                <p class="text-slate-400 text-[10px] max-w-lg mx-auto leading-relaxed">
+                    价格可能因所在地区不同而有所调整。订阅将通过您的支付账户自动续订，除非在当前期限结束前至少24小时取消。
+                </p>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 z-50 glass-header px-6 py-3 pb-6 flex items-center justify-around border-t border-slate-100">
+            <a href="#" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-wider">首页</span>
+            </a>
+            <a href="课程工坊页面.html" id="nav-workshop" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
+                <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+                <span class="text-[10px] font-bold uppercase tracking-wider">课程工坊</span>
+            </a>
+            <a href="#" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
+                <iconify-icon icon="lucide:settings" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-wider">设置</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        const btnMonthly = document.getElementById('toggle-monthly');
+        const btnYearly = document.getElementById('toggle-yearly');
+        const priceEl = document.getElementById('pro-price');
+        const billingEl = document.getElementById('pro-billing');
+
+        btnMonthly.addEventListener('click', () => {
+            btnMonthly.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+            btnMonthly.classList.remove('text-slate-500');
+            btnYearly.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+            btnYearly.classList.add('text-slate-500');
+            priceEl.textContent = '¥150';
+            billingEl.classList.add('opacity-0');
+        });
+
+        btnYearly.addEventListener('click', () => {
+            btnYearly.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+            btnYearly.classList.remove('text-slate-500');
+            btnMonthly.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+            btnMonthly.classList.add('text-slate-500');
+            priceEl.textContent = '¥125';
+            billingEl.classList.remove('opacity-0');
+        });
+
+        const toggleComparison = document.getElementById('toggle-comparison');
+        const comparisonTable = document.getElementById('comparison-table');
+        const comparisonIcon = document.getElementById('comparison-icon');
+
+        toggleComparison.addEventListener('click', () => {
+            const isHidden = comparisonTable.classList.contains('hidden');
+            if (isHidden) {
+                comparisonTable.classList.remove('hidden');
+                comparisonIcon.style.transform = 'rotate(180deg)';
+            } else {
+                comparisonTable.classList.add('hidden');
+                comparisonIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    </script>
+</body>
+</html>

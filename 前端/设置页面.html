@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>设置 - Linguify</title>
+  <!-- EN: zh-CN UI strings on this page have English equivalents in the UI_I18N['en'] dictionary below. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-6 py-4">
+    <div class="flex items-center gap-4">
+      <a href="#" onclick="history.back(); return false;" class="inline-flex items-center justify-center h-10 w-10 rounded-full hover:bg-slate-100 transition-colors">
+        <iconify-icon icon="lucide:chevron-left" class="text-xl text-slate-700"></iconify-icon>
+      </a>
+      <h1 class="text-xl font-bold text-slate-800 font-display" data-i18n="settings_title">设置</h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-2xl mx-auto px-6 py-8">
+    <!-- Realtime 模式设置 -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
+          <iconify-icon icon="lucide:sparkles" class="text-sky-600 text-xl"></iconify-icon>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 font-display" data-i18n="realtime_section_title">Realtime 模式设置</h2>
+      </div>
+      <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-6">
+        <div class="text-sm font-semibold text-emerald-700 mb-1" data-i18n="engine_tip_title">OpenAI Realtime 已启用</div>
+        <p class="text-xs text-emerald-700" data-i18n="engine_tip_desc">当前仅支持 OpenAI Realtime 语音直连。</p>
+        <p class="text-xs text-emerald-700 mt-1">
+          <span data-i18n="engine_tip_port">服务器端口：</span>
+          <code class="px-1 py-0.5 bg-white/70 rounded">3002</code>
+        </p>
+      </div>
+
+    </section>
+
+    <!-- OpenAI 语音设置 -->
+    <section id="openai-voice-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+          <iconify-icon icon="lucide:mic" class="text-purple-600 text-xl"></iconify-icon>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 font-display" data-i18n="openai_voice_title">OpenAI 语音设置</h2>
+      </div>
+
+      <!-- 语音选择 -->
+      <div class="mb-4">
+        <label class="block text-sm font-semibold text-slate-700 mb-3" data-i18n="openai_voice_label">选择语音风格</label>
+        <select id="voice-select" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-400 focus:outline-none text-slate-800 font-medium">
+          <option value="alloy">Alloy（中性，清晰）</option>
+          <option value="echo">Echo（男声，沉稳）</option>
+          <option value="fable">Fable（男声，温暖）</option>
+          <option value="onyx">Onyx（男声，深沉）</option>
+          <option value="nova" selected>Nova（女声，自然流畅）</option>
+          <option value="shimmer">Shimmer（女声，柔和）</option>
+          <option value="sol">Sol（男声，GPT Realtime风格）</option>
+          <option value="ember">Ember（女声，GPT Realtime风格）</option>
+          <option value="arbor">Arbor（男声，GPT Realtime风格）</option>
+          <option value="breeze">Breeze（女声，GPT Realtime风格）</option>
+        </select>
+      </div>
+
+      <!-- 测试语音按钮 -->
+      <button id="test-voice-btn" type="button" class="w-full px-4 py-3 bg-sky-100 text-sky-700 rounded-xl font-semibold hover:bg-sky-200 transition-colors">
+        <span data-i18n="test_voice_btn">🔊 测试语音播放</span>
+      </button>
+    </section>
+
+    <!-- 当前状态 -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+          <iconify-icon icon="lucide:info" class="text-green-600 text-xl"></iconify-icon>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 font-display" data-i18n="current_settings_title">当前设置</h2>
+      </div>
+      <div id="current-model-info" class="text-sm text-slate-700 p-4 bg-slate-50 rounded-xl" data-i18n="current_settings_loading">正在加载...</div>
+    </section>
+
+    <!-- 保存按钮 -->
+    <div class="mt-6">
+      <button id="save-settings-btn" class="w-full px-6 py-4 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition-colors shadow-lg">
+        <span data-i18n="save_btn">保存设置</span>
+      </button>
+    </div>
+  </main>
+
+  <script>
+    // 模式固定配置
+    const OPENAI_REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+    const LANG_STORAGE_KEY = 'ui-language';
+    const UI_I18N = {
+      'zh-CN': {
+        settings_title: '设置',
+        realtime_section_title: 'Realtime 模式设置',
+        engine_tip_title: 'OpenAI Realtime 已启用',
+        engine_tip_desc: '当前仅支持 OpenAI Realtime 语音直连。',
+        engine_tip_port: '服务器端口：',
+        openai_voice_title: 'OpenAI 语音设置',
+        openai_voice_label: '选择语音风格',
+        test_voice_btn: '🔊 测试语音播放',
+        current_settings_title: '当前设置',
+        current_settings_loading: '正在加载...',
+        save_btn: '保存设置',
+        alert_saved: '✅ 设置已保存！',
+        alert_save_failed: '❌ 保存失败，请重试',
+        tts_test_text: '你好，这是语音测试。如果你能听到这句话，说明语音功能正常工作。',
+        tts_not_supported: '❌ 浏览器不支持语音合成功能\n\n请使用 Chrome 或 Edge 浏览器',
+        current_openai: 'OpenAI Realtime - {{model}}（语音: {{voice}}）'
+      },
+      'en': {
+        settings_title: 'Settings',
+        realtime_section_title: 'Realtime Mode',
+        engine_tip_title: 'OpenAI Realtime Enabled',
+        engine_tip_desc: 'Only OpenAI Realtime direct audio is supported.',
+        engine_tip_port: 'Server port:',
+        openai_voice_title: 'OpenAI Voice Settings',
+        openai_voice_label: 'Voice Style',
+        test_voice_btn: '🔊 Test Voice',
+        current_settings_title: 'Current Settings',
+        current_settings_loading: 'Loading...',
+        save_btn: 'Save Settings',
+        alert_saved: '✅ Settings saved!',
+        alert_save_failed: '❌ Save failed, please retry',
+        tts_test_text: 'Hello, this is a voice test. If you can hear this, TTS is working.',
+        tts_not_supported: '❌ Speech synthesis is not supported\n\nPlease use Chrome or Edge',
+        current_openai: 'OpenAI Realtime - {{model}} (voice: {{voice}})'
+      }
+    };
+
+    function getUiLang() {
+      return localStorage.getItem(LANG_STORAGE_KEY) || 'zh-CN';
+    }
+
+    function t(key, lang) {
+      const dict = UI_I18N[lang] || UI_I18N['zh-CN'];
+      return dict[key] || UI_I18N['zh-CN'][key] || '';
+    }
+
+    function applyTranslations(lang) {
+      document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        el.textContent = t(key, lang);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        el.setAttribute('placeholder', t(key, lang));
+      });
+      document.title = `${t('settings_title', lang)} - Linguify`;
+    }
+
+    // 加载保存的设置
+    function loadSettings() {
+      try {
+        const saved = localStorage.getItem('ai-model-settings');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const sanitized = {
+            openaiVoice: parsed.openaiVoice || parsed.voice || 'nova'
+          };
+          if (parsed.openaiApiKey || parsed.apiKey) {
+            localStorage.setItem('ai-model-settings', JSON.stringify(sanitized));
+          }
+          return sanitized;
+        }
+      } catch (e) {
+        console.error('加载设置失败:', e);
+      }
+      return {
+        openaiVoice: 'nova'
+      };
+    }
+
+    // 保存设置
+    function saveSettings(settings) {
+      try {
+        const sanitized = {
+          openaiVoice: settings.openaiVoice || 'nova'
+        };
+        localStorage.setItem('ai-model-settings', JSON.stringify(sanitized));
+        console.log('✅ 设置已保存:', sanitized);
+        return true;
+      } catch (e) {
+        console.error('保存设置失败:', e);
+        return false;
+      }
+    }
+
+    // 更新当前设置显示
+    function updateCurrentModelInfo() {
+      const info = document.getElementById('current-model-info');
+      if (!info) return;
+      
+      const settings = loadSettings();
+      const lang = getUiLang();
+      let infoText = t('current_openai', lang)
+        .replace('{{model}}', OPENAI_REALTIME_MODEL)
+        .replace('{{voice}}', settings.openaiVoice || 'nova');
+      info.textContent = infoText;
+    }
+
+    // 保存设置
+    function handleSaveSettings() {
+      const openaiVoice = document.getElementById('voice-select').value;
+
+      const settings = {
+        openaiVoice
+      };
+
+      if (saveSettings(settings)) {
+        updateCurrentModelInfo();
+        alert(t('alert_saved', getUiLang()));
+      } else {
+        alert(t('alert_save_failed', getUiLang()));
+      }
+    }
+
+    // 页面加载时初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      // 加载保存的设置
+      const settings = loadSettings();
+
+      // 设置 OpenAI 语音
+      const voiceSelect = document.getElementById('voice-select');
+      if (voiceSelect && settings.openaiVoice) {
+        voiceSelect.value = settings.openaiVoice;
+      }
+      
+      // 更新当前设置显示
+      updateCurrentModelInfo();
+      applyTranslations(getUiLang());
+      
+      // 保存按钮
+      const saveBtn = document.getElementById('save-settings-btn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', handleSaveSettings);
+      }
+      
+      // 测试语音按钮
+      const testVoiceBtn = document.getElementById('test-voice-btn');
+      if (testVoiceBtn) {
+        testVoiceBtn.addEventListener('click', function() {
+          const testText = t('tts_test_text', getUiLang());
+          
+          if (!window.speechSynthesis) {
+            alert(t('tts_not_supported', getUiLang()));
+            return;
+          }
+          
+          const utterance = new SpeechSynthesisUtterance(testText);
+          utterance.lang = 'zh-CN';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+          
+          window.speechSynthesis.speak(utterance);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
