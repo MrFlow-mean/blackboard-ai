@@ -78,6 +78,13 @@ const OPENAI_REALTIME_URL = process.env.OPENAI_REALTIME_URL || buildRealtimeUrl(
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_STRUCTURE_MODEL = process.env.OPENAI_STRUCTURE_MODEL || 'gpt-4o-mini';
 const OPENAI_TEXT_MODEL = process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini';
+// Board model routing (PM subject_type -> board model)
+// - science (理科) => prefer o3 for structured reasoning
+// - humanities (文科) => prefer GPT-5.2 for richer narration/organization
+const OPENAI_BOARD_MODEL_SCIENCE = process.env.OPENAI_BOARD_MODEL_SCIENCE || process.env.OPENAI_BOARD_MODEL_SCI || 'o3';
+const OPENAI_BOARD_MODEL_HUMANITIES = process.env.OPENAI_BOARD_MODEL_HUMANITIES || process.env.OPENAI_BOARD_MODEL_ART || 'gpt-5.2';
+const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || OPENAI_TEXT_MODEL || 'gpt-4o-mini';
+const WEB_SEARCH_PROVIDER = (process.env.WEB_SEARCH_PROVIDER || 'duckduckgo').toString().trim().toLowerCase();
 const OPENAI_RESPONSES_URL = `${OPENAI_API_BASE}/v1/responses`;
 const OPENAI_CHAT_URL = `${OPENAI_API_BASE}/v1/chat/completions`;
 
@@ -181,6 +188,301 @@ function clipText(value, max = 240) {
   return text.slice(0, max);
 }
 
+function stripHtmlTags(html = '') {
+  const text = (html || '').toString();
+  if (!text) return '';
+  return text
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/<\/?[^>]+>/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeSourcesInput(rawSources) {
+  if (!rawSources) return [];
+  if (typeof rawSources === 'string') {
+    const text = rawSources.trim();
+    if (!text) return [];
+    return [{ source_id: 'materials', title: '材料', text }];
+  }
+  const list = Array.isArray(rawSources) ? rawSources : [];
+  return list
+    .map((item, idx) => {
+      if (!item || typeof item !== 'object') return null;
+      const sourceId = clipText(item.source_id || item.id || `source_${idx + 1}`, 80) || `source_${idx + 1}`;
+      const title = clipText(item.title || item.name || sourceId, 120) || sourceId;
+      const text = (item.text || item.content || '').toString();
+      const clean = text.replace(/\r\n?/g, '\n').trim();
+      if (!clean) return null;
+      return { source_id: sourceId, title, text: clean };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function chunkSourceText(text, chunkCharLimit = 900) {
+  const clean = (text || '').toString().replace(/\r\n?/g, '\n').trim();
+  if (!clean) return [];
+  const paras = clean.split(/\n{2,}/g).map(s => s.trim()).filter(Boolean);
+  const chunks = [];
+  let buffer = '';
+  let idx = 0;
+  const pushBuffer = () => {
+    const t = buffer.trim();
+    if (!t) return;
+    idx += 1;
+    chunks.push({ index: idx, text: t });
+    buffer = '';
+  };
+  for (const p of paras) {
+    if (!buffer) {
+      buffer = p;
+      if (buffer.length >= chunkCharLimit) pushBuffer();
+      continue;
+    }
+    if ((buffer.length + 2 + p.length) <= chunkCharLimit) {
+      buffer = `${buffer}\n\n${p}`;
+    } else {
+      pushBuffer();
+      buffer = p;
+      if (buffer.length >= chunkCharLimit) pushBuffer();
+    }
+  }
+  pushBuffer();
+  return chunks;
+}
+
+function buildSourceChunks(sources, locale = 'zh-CN') {
+  const list = normalizeSourcesInput(sources);
+  const chunks = [];
+  list.forEach((src) => {
+    const parts = chunkSourceText(src.text, 900);
+    parts.forEach((part) => {
+      const chunkId = `${src.source_id}:${part.index}`;
+      chunks.push({
+        chunk_id: chunkId,
+        source_id: src.source_id,
+        source_title: src.title,
+        index: part.index,
+        text: clipText(part.text, 6000),
+        preview: clipText(part.text, locale === 'en' ? 220 : 160)
+      });
+    });
+  });
+  return { sources: list, chunks };
+}
+
+function buildFallbackTeachingGuide(board, chunkIds = [], locale = 'zh-CN') {
+  const now = new Date().toISOString();
+  if (locale === 'en') {
+    return {
+      version: 1,
+      created_at: now,
+      overview: 'Teach strictly based on the blackboard. Only cite allowed source chunks.',
+      rules: [
+        'Only cite from Allowed Sources below. If more context is needed, ask user to select text and expand attention scope.',
+        'Follow board order. One key point per turn + one short check question.'
+      ],
+      allowed_chunk_ids: chunkIds.slice(0, 12),
+      teacher_script: []
+    };
+  }
+  return {
+    version: 1,
+    created_at: now,
+    overview: '严格围绕黑板讲解，只能引用允许的材料片段。',
+    rules: [
+      '只能引用“允许引用范围”内的材料片段。需要更多内容时，引导用户框选并点击“增加讲师注意力篇幅”。',
+      '按黑板节点顺序推进：每轮只讲 1 个关键点 + 1 个简短检查问题。'
+    ],
+    allowed_chunk_ids: chunkIds.slice(0, 12),
+    teacher_script: []
+  };
+}
+
+async function selectInitialAttentionChunks(goalText, chunks, locale = 'zh-CN') {
+  const safeChunks = Array.isArray(chunks) ? chunks.slice(0, 80) : [];
+  if (!safeChunks.length) return { chunk_ids: [], rationale: '' };
+  if (!OPENAI_API_KEY && !OPENROUTER_API_KEY) {
+    return { chunk_ids: safeChunks.slice(0, 4).map(x => x.chunk_id), rationale: 'fallback' };
+  }
+
+  const systemPrompt = locale === 'en'
+    ? 'You are AttentionScope selector. Return strict JSON only.'
+    : '你是 AttentionScope 选择器。只返回严格JSON。';
+  const userPrompt = locale === 'en'
+    ? [
+      'Pick the MINIMAL set of source chunks needed for the user goal.',
+      'Return JSON schema:',
+      '{"chunk_ids":["string"],"rationale":"string"}',
+      'Rules:',
+      '- Prefer 3-8 chunks.',
+      '- Choose only chunk_ids from the list.',
+      '- Do NOT include unrelated chunks.',
+      `User goal:\n${clipText(goalText, 1200)}`,
+      'Chunks:',
+      safeChunks.map(c => `${c.chunk_id} | ${c.source_title} | ${c.preview}`).join('\n')
+    ].join('\n')
+    : [
+      '请为“讲师可引用范围”挑选最小必要材料片段集合（AttentionScope）。',
+      '只返回 JSON，schema：',
+      '{"chunk_ids":["string"],"rationale":"string"}',
+      '规则：',
+      '- 优先选 3–8 个 chunk。',
+      '- 只能从下方列表选择 chunk_id。',
+      '- 只选与目标直接相关的片段，避免讲全文。',
+      `用户目标：\n${clipText(goalText, 1200)}`,
+      '材料片段列表：',
+      safeChunks.map(c => `${c.chunk_id}｜${c.source_title}｜${c.preview}`).join('\n')
+    ].join('\n');
+
+  try {
+    const result = await callStructuredJsonWithFallback(systemPrompt, userPrompt, {
+      model: OPENAI_STRUCTURE_MODEL,
+      temperature: 0.1,
+      max_output_tokens: 420
+    });
+    const raw = result.raw || {};
+    const idsRaw = Array.isArray(raw.chunk_ids) ? raw.chunk_ids : [];
+    const ids = idsRaw
+      .map((x) => (x ?? '').toString().trim())
+      .filter(Boolean)
+      .slice(0, 30);
+    const allowSet = new Set(safeChunks.map(c => c.chunk_id));
+    const mapped = [];
+    ids.forEach((id) => {
+      // 允许模型用 “1/2/3” 表示第几个 chunk
+      if (/^\d{1,3}$/.test(id)) {
+        const idx = Number(id);
+        if (Number.isFinite(idx) && idx >= 1 && idx <= safeChunks.length) {
+          mapped.push(safeChunks[idx - 1].chunk_id);
+        }
+        return;
+      }
+      // 常见分隔符纠错：materials-1 -> materials:1
+      const normalized = id.replace(/-/g, ':');
+      mapped.push(normalized);
+    });
+    const filtered = mapped.filter(id => allowSet.has(id)).slice(0, 12);
+    const finalIds = filtered.length ? filtered : safeChunks.slice(0, 4).map(x => x.chunk_id);
+    return { chunk_ids: finalIds, rationale: clipText(raw.rationale, 300) };
+  } catch (error) {
+    console.warn('⚠️ selectInitialAttentionChunks failed, fallback:', error.message);
+    return { chunk_ids: safeChunks.slice(0, 4).map(x => x.chunk_id), rationale: 'fallback' };
+  }
+}
+
+async function generateTeachingGuide(goalText, board, chunks, allowedChunkIds, locale = 'zh-CN') {
+  const safeAllowed = Array.isArray(allowedChunkIds) ? allowedChunkIds.slice(0, 12) : [];
+  if (!OPENAI_API_KEY && !OPENROUTER_API_KEY) {
+    return buildFallbackTeachingGuide(board, safeAllowed, locale);
+  }
+  const outline = Array.isArray(board?.outline) ? board.outline : [];
+  const allowedNodeIds = outline.map(n => String(n?.id || '').trim()).filter(Boolean);
+  const allowedNodeSet = new Set(allowedNodeIds);
+  const outlineText = outline.map(n => `[${n.id}] ${n.title}`).join('\n');
+  const allowedPreview = (Array.isArray(chunks) ? chunks : [])
+    .filter(c => safeAllowed.includes(c.chunk_id))
+    .slice(0, 10)
+    .map(c => `${c.chunk_id}｜${c.source_title}｜${c.preview}`)
+    .join('\n');
+
+  const systemPrompt = locale === 'en'
+    ? 'You are a TeachingGuide writer for a classroom blackboard system. Return strict JSON only.'
+    : '你是课堂式黑板系统的 TeachingGuide（教案/讲义）编写者。只返回严格JSON。';
+  const userPrompt = locale === 'en'
+    ? [
+      'Write a TeachingGuide that strictly constrains the realtime teacher attention.',
+      'Return JSON schema:',
+      '{"version":1,"overview":"string","rules":["string"],"allowed_chunk_ids":["string"],"teacher_script":[{"node_id":"string","focus_points":["string"],"questions":["string"]}]}',
+      'Hard rules:',
+      '- The teacher must ONLY cite from allowed_chunk_ids.',
+      '- The guide must tell teacher to ask user to expand scope when needed.',
+      '- Keep concise.',
+      `teacher_script.node_id MUST be one of these board node ids: ${allowedNodeIds.join(', ') || 'N/A'}`,
+      `User goal:\n${clipText(goalText, 1200)}`,
+      `Blackboard goal:\n${clipText(board?.goal, 200)}`,
+      'Board outline:',
+      outlineText || 'N/A',
+      'Allowed source chunks (preview):',
+      allowedPreview || 'N/A',
+      'Allowed chunk ids:',
+      safeAllowed.join(', ')
+    ].join('\n')
+    : [
+      '请编写一份 TeachingGuide（教案讲义），用来严格约束实时语音讲师的注意力与讲解范围。',
+      '只返回 JSON，schema：',
+      '{"version":1,"overview":"string","rules":["string"],"allowed_chunk_ids":["string"],"teacher_script":[{"node_id":"string","focus_points":["string"],"questions":["string"]}]}',
+      '硬规则：',
+      '- 讲师只能引用 allowed_chunk_ids 对应的材料片段；禁止引用未允许的全文其他部分。',
+      '- 若用户问题超出范围，讲师必须引导用户通过“框选文本→增加讲师注意力篇幅”来扩展引用范围。',
+      '- 输出要精炼，像课堂备课提纲，不要长篇大论。',
+      `teacher_script.node_id 必须是黑板节点 id 之一：${allowedNodeIds.join('，') || '无'}`,
+      `用户目标：\n${clipText(goalText, 1200)}`,
+      `黑板目标：\n${clipText(board?.goal, 200)}`,
+      '黑板大纲：',
+      outlineText || '无',
+      '允许引用的材料片段预览：',
+      allowedPreview || '无',
+      '允许 chunk ids：',
+      safeAllowed.join('，')
+    ].join('\n');
+
+  try {
+    const result = await callStructuredJsonWithFallback(systemPrompt, userPrompt, {
+      model: OPENAI_STRUCTURE_MODEL,
+      temperature: 0.2,
+      max_output_tokens: 900
+    });
+    const raw = result.raw || {};
+    const rules = Array.isArray(raw.rules) ? raw.rules.map(x => clipText(x, 220)).filter(Boolean).slice(0, 10) : [];
+    const script = Array.isArray(raw.teacher_script) ? raw.teacher_script.slice(0, 12).map((x) => {
+      const obj = x && typeof x === 'object' ? x : {};
+      return {
+        node_id: clipText(obj.node_id, 20),
+        focus_points: Array.isArray(obj.focus_points) ? obj.focus_points.map(p => clipText(p, 140)).filter(Boolean).slice(0, 6) : [],
+        questions: Array.isArray(obj.questions) ? obj.questions.map(q => clipText(q, 140)).filter(Boolean).slice(0, 4) : []
+      };
+    }).filter(x => x.node_id && allowedNodeSet.has(String(x.node_id))) : [];
+    const guide = {
+      version: 1,
+      created_at: new Date().toISOString(),
+      overview: clipText(raw.overview, 360) || (locale === 'en' ? 'Teaching guide generated.' : '已生成教案讲义。'),
+      rules: rules.length ? rules : buildFallbackTeachingGuide(board, safeAllowed, locale).rules,
+      allowed_chunk_ids: safeAllowed,
+      teacher_script: script
+    };
+    return guide;
+  } catch (error) {
+    console.warn('⚠️ generateTeachingGuide failed, fallback:', error.message);
+    return buildFallbackTeachingGuide(board, safeAllowed, locale);
+  }
+}
+
+function buildClippedSourcesTextFromBoard(board, maxChars = 6200) {
+  const chunks = Array.isArray(board?.sources_chunks) ? board.sources_chunks : [];
+  const allowed = Array.isArray(board?.attention_scope?.allowed_chunk_ids) ? board.attention_scope.allowed_chunk_ids : [];
+  const extraSnippets = Array.isArray(board?.attention_scope?.extra_snippets) ? board.attention_scope.extra_snippets : [];
+  const parts = [];
+  const chunkById = new Map(chunks.map(c => [c.chunk_id, c]));
+
+  allowed.forEach((id) => {
+    const chunk = chunkById.get(id);
+    if (!chunk) return;
+    parts.push(`[SourceChunk:${chunk.chunk_id}] ${chunk.source_title}\n${chunk.text}`.trim());
+  });
+  extraSnippets.forEach((snip) => {
+    const text = (snip?.text || '').toString().trim();
+    if (!text) return;
+    const tag = clipText(snip?.id || 'user', 80) || 'user';
+    parts.push(`[Extra:${tag}]\n${clipText(text, 2000)}`.trim());
+  });
+
+  const merged = parts.join('\n\n---\n\n').trim();
+  return clipText(merged, maxChars);
+}
+
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -211,6 +513,300 @@ function parseBody(req) {
     });
     req.on('error', reject);
   });
+}
+
+function jsonEscapeForPrompt(value) {
+  return (value || '').toString().replace(/[\\]/g, '\\\\').replace(/`/g, '\\`');
+}
+
+function normalizeBase64Input(data) {
+  const raw = (data || '').toString().trim();
+  if (!raw) return '';
+  const m = raw.match(/^data:([a-z0-9+.-]+\/[a-z0-9+.-]+);base64,(.+)$/i);
+  if (m && m[2]) return m[2].trim();
+  return raw;
+}
+
+function looksLikeBase64(value) {
+  const raw = (value || '').toString().trim();
+  if (!raw) return false;
+  if (raw.length < 64) return false;
+  if (/[^a-z0-9+/=]/i.test(raw)) return false;
+  return true;
+}
+
+async function callOpenAIResponsesForVisionJson(systemPrompt, imageBase64, mimeType = 'image/png', locale = 'zh-CN') {
+  if (!OPENAI_API_KEY) {
+    throw new Error('未配置 OPENAI_API_KEY');
+  }
+  const safeB64 = normalizeBase64Input(imageBase64);
+  if (!safeB64 || !looksLikeBase64(safeB64)) {
+    throw new Error('图片 base64 数据无效');
+  }
+
+  const prompt = (systemPrompt || '').toString().trim();
+  const resp = await fetchFn(OPENAI_RESPONSES_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: OPENAI_VISION_MODEL,
+      input: [
+        {
+          role: 'system',
+          content: prompt
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: locale === 'en'
+                ? 'Please extract the text content from this image and summarize it for learning.'
+                : '请从图片中提取文字内容，并为学习目的做结构化总结。'
+            },
+            {
+              type: 'input_image',
+              image_url: `data:${mimeType || 'image/png'};base64,${safeB64}`
+            }
+          ]
+        }
+      ],
+      max_output_tokens: 900
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new Error(`Responses API(vision)失败: ${resp.status} ${errText}`);
+  }
+  const data = await resp.json();
+  const text = extractResponseText(data);
+  const parsed = extractJsonObject(text);
+  if (!parsed) {
+    throw new Error('模型返回内容无法解析为JSON');
+  }
+  return parsed;
+}
+
+async function extractTextFromImage(imageBase64, mimeType = 'image/png', filename = '', locale = 'zh-CN') {
+  const systemPrompt = locale === 'en'
+    ? [
+      'You are an image-to-text extractor for a classroom blackboard app.',
+      'Return strict JSON only, schema:',
+      '{"title":"string","extracted_text":"string","summary":"string","key_points":["string"]}',
+      'Rules:',
+      '- Focus on text in the image (OCR). Preserve line breaks.',
+      '- Do NOT identify any real people in the image.',
+      '- If the image has no text, set extracted_text to empty string.',
+      '- Keep summary concise.'
+    ].join('\n')
+    : [
+      '你是课堂式黑板AI应用的图片识别（OCR）与学习摘要助手。',
+      '只返回严格 JSON，schema：',
+      '{"title":"string","extracted_text":"string","summary":"string","key_points":["string"]}',
+      '规则：',
+      '- 以图片中的文字为主（OCR），尽量保留换行。',
+      '- 不要识别/推断图片中真实人物身份。',
+      '- 如果图片中几乎没有文字，extracted_text 置空字符串。',
+      '- summary 要简短、可用于学习。',
+      `文件名（可选）：${clipText(filename, 80)}`
+    ].join('\n');
+
+  const raw = await callOpenAIResponsesForVisionJson(systemPrompt, imageBase64, mimeType, locale);
+  const title = clipText(raw?.title, 120) || (filename ? clipText(filename, 120) : (locale === 'en' ? 'Image' : '图片'));
+  const extracted = (raw?.extracted_text || '').toString().replace(/\r\n?/g, '\n').trim();
+  const summary = (raw?.summary || '').toString().trim();
+  const keyPoints = Array.isArray(raw?.key_points)
+    ? raw.key_points.map(x => clipText(x, 200)).filter(Boolean).slice(0, 12)
+    : [];
+  return {
+    title,
+    extracted_text: clipText(extracted, 12000),
+    summary: clipText(summary, 1200),
+    key_points: keyPoints
+  };
+}
+
+async function analyzePmLearningSpec(userText, attachments = [], previousSpec = null, locale = 'zh-CN') {
+  const safeUser = clipText(userText, 3000);
+  const attList = Array.isArray(attachments) ? attachments.slice(0, 10) : [];
+  const attText = attList.map((a, idx) => {
+    const title = clipText(a?.title || a?.name || a?.filename || `附件${idx + 1}`, 120);
+    const type = clipText(a?.type || a?.kind || 'attachment', 40);
+    const extracted = clipText(a?.extracted_text || a?.text || '', 1800);
+    const summary = clipText(a?.summary || '', 600);
+    const points = Array.isArray(a?.key_points) ? a.key_points.map(x => clipText(x, 160)).filter(Boolean).slice(0, 6) : [];
+    const parts = [];
+    parts.push(`- [${idx + 1}] ${title} (${type})`);
+    if (summary) parts.push(`  摘要：${summary}`);
+    if (points.length) parts.push(`  要点：${points.join('；')}`);
+    if (extracted) parts.push(`  提取文本：${extracted}`);
+    return parts.join('\n');
+  }).join('\n');
+
+  const systemPrompt = locale === 'en'
+    ? 'You are the Realtime PM (project manager) analyzer. Return strict JSON only.'
+    : '你是 Realtime PM（项目经理）分析器。只返回严格 JSON。';
+  const userPrompt = locale === 'en'
+    ? [
+      'Given the latest user message and available attachments, produce a structured LearningSpec and readiness signal.',
+      'Return JSON schema:',
+      '{"learning_spec":{"topic":"string","goal":"string","level":"string","time_budget_min":0,"preferred_style":"string","constraints":["string"],"materials_summary":"string","subject_type":"science|humanities|mixed"},"pm_summary_bullets":["string"],"clarity_score":0,"ready_for_board":false,"goal_text":"string"}',
+      'Rules:',
+      '- subject_type: science for STEM (math/physics/chemistry/biology/engineering/programming/statistics); humanities for languages/history/literature/philosophy/law/politics; mixed if both.',
+      '- clarity_score is 0-100.',
+      '- ready_for_board should be true only when topic+goal+level are clear enough and constraints are sufficient.',
+      '- goal_text should be a compact text block used for board generation (Chinese OK even when locale=en).',
+      `User message:\n${safeUser}`,
+      previousSpec ? `Previous spec:\n${JSON.stringify(previousSpec)}` : '',
+      attText ? `Attachments:\n${attText}` : 'Attachments: (none)'
+    ].filter(Boolean).join('\n')
+    : [
+      '请根据用户最新一句话 + 用户提供的附件资料，给出结构化 LearningSpec，并判断是否已经“清晰到可以生成板书”。',
+      '只返回 JSON，schema：',
+      '{"learning_spec":{"topic":"string","goal":"string","level":"string","time_budget_min":0,"preferred_style":"string","constraints":["string"],"materials_summary":"string","subject_type":"science|humanities|mixed"},"pm_summary_bullets":["string"],"clarity_score":0,"ready_for_board":false,"goal_text":"string"}',
+      '规则：',
+      '- subject_type 学科类型：理科/STEM 归为 science（数学/物理/化学/生物/工程/编程/统计等）；文科/人文社科/语言 归为 humanities（语文/英语/历史/文学/哲学/法学/政治等）；两者都有选 mixed。',
+      '- clarity_score 取 0-100。',
+      '- ready_for_board 只有在“主题+目标+水平/困难点+关键约束”都足够明确时才为 true。',
+      '- goal_text 用于后续板书生成：建议按“学习目标/当前水平/约束/材料摘要”组织成短文本。',
+      `用户最新输入：\n${safeUser}`,
+      previousSpec ? `上一轮 LearningSpec：\n${JSON.stringify(previousSpec)}` : '',
+      attText ? `用户附件资料：\n${attText}` : '用户附件资料：无'
+    ].filter(Boolean).join('\n');
+
+  const result = await callStructuredJsonWithFallback(systemPrompt, userPrompt, {
+    model: OPENAI_STRUCTURE_MODEL,
+    temperature: 0.2,
+    max_output_tokens: 900
+  });
+  const raw = result.raw || {};
+  const spec = raw.learning_spec && typeof raw.learning_spec === 'object' ? raw.learning_spec : {};
+  const bullets = Array.isArray(raw.pm_summary_bullets) ? raw.pm_summary_bullets.map(x => clipText(x, 160)).filter(Boolean).slice(0, 8) : [];
+  const clarity = Number(raw.clarity_score);
+  const clarityScore = Number.isFinite(clarity) ? Math.max(0, Math.min(100, Math.round(clarity))) : 0;
+  const ready = raw.ready_for_board === true && clarityScore >= 70;
+  const goalText = clipText(raw.goal_text, 2600);
+  const rawSubjectType = (spec.subject_type || raw.subject_type || '').toString().trim().toLowerCase();
+  const subjectType = (rawSubjectType === 'science' || rawSubjectType === 'humanities' || rawSubjectType === 'mixed')
+    ? rawSubjectType
+    : 'mixed';
+  const normalizedSpec = {
+    topic: clipText(spec.topic, 220),
+    goal: clipText(spec.goal, 420),
+    level: clipText(spec.level, 120),
+    time_budget_min: Number.isFinite(Number(spec.time_budget_min)) ? Math.max(0, Math.min(600, Number(spec.time_budget_min))) : 0,
+    preferred_style: clipText(spec.preferred_style, 120),
+    constraints: Array.isArray(spec.constraints) ? spec.constraints.map(x => clipText(x, 160)).filter(Boolean).slice(0, 10) : [],
+    materials_summary: clipText(spec.materials_summary, 900),
+    subject_type: subjectType
+  };
+  const pmSummary = bullets.length
+    ? bullets
+    : [
+      normalizedSpec.topic ? `学习主题：${normalizedSpec.topic}` : '',
+      normalizedSpec.goal ? `学习目标：${normalizedSpec.goal}` : '',
+      normalizedSpec.level ? `当前水平：${normalizedSpec.level}` : ''
+    ].filter(Boolean).slice(0, 6);
+
+  return {
+    learning_spec: normalizedSpec,
+    pm_summary_bullets: pmSummary,
+    clarity_score: clarityScore,
+    ready_for_board: !!ready,
+    goal_text: goalText || ''
+  };
+}
+
+async function webSearchDuckDuckGoHtml(query, maxResults = 6) {
+  const q = (query || '').toString().trim();
+  if (!q) return [];
+  const url = `https://duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+  const resp = await fetchFn(url, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) BlackboardAI/1.0',
+      'Accept': 'text/html',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.7',
+      'Referer': 'https://duckduckgo.com/',
+      'Origin': 'https://duckduckgo.com'
+    }
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`DuckDuckGo 搜索失败: ${resp.status} ${clipText(text, 240)}`);
+  }
+  const html = await resp.text();
+  const results = [];
+
+  const normalizeResultUrl = (href) => {
+    let finalUrl = (href || '').toString().trim();
+    if (!finalUrl) return '';
+    try {
+      const normalizedHref = finalUrl.startsWith('//') ? `https:${finalUrl}` : finalUrl;
+      const parsed = new URL(normalizedHref);
+      const uddg = parsed.searchParams.get('uddg');
+      if (uddg) finalUrl = decodeURIComponent(uddg);
+      if (finalUrl.startsWith('//')) finalUrl = `https:${finalUrl}`;
+    } catch (_) {
+      // ignore
+    }
+    return finalUrl;
+  };
+
+  // Robust extraction: pair title + snippet when possible
+  const paired = html.matchAll(/class=['"]result__a['"][^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>[\s\S]{0,2400}?class=['"]result__snippet['"][^>]*>([\s\S]*?)<\/a>/gi);
+  for (const m of paired) {
+    if (results.length >= maxResults) break;
+    const href = normalizeResultUrl(m[1] || '');
+    const title = stripHtmlTags(m[2] || '');
+    const snippet = stripHtmlTags(m[3] || '');
+    if (!href || !title) continue;
+    results.push({
+      title: clipText(title, 160),
+      url: clipText(href, 800),
+      snippet: clipText(snippet, 360)
+    });
+  }
+
+  // Fallback: title-only extraction
+  if (results.length < maxResults) {
+    const existing = new Set(results.map(r => r.url));
+    const titlesOnly = html.matchAll(/class=['"]result__a['"][^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi);
+    for (const m of titlesOnly) {
+      if (results.length >= maxResults) break;
+      const href = normalizeResultUrl(m[1] || '');
+      const title = stripHtmlTags(m[2] || '');
+      if (!href || !title) continue;
+      if (existing.has(href)) continue;
+      existing.add(href);
+      results.push({
+        title: clipText(title, 160),
+        url: clipText(href, 800),
+        snippet: ''
+      });
+    }
+  }
+  return results;
+}
+
+function buildWebSearchMaterialText(query, results, locale = 'zh-CN') {
+  const q = (query || '').toString().trim();
+  const list = Array.isArray(results) ? results : [];
+  const lines = [];
+  lines.push(locale === 'en' ? `[Web search] ${q}` : `[网络搜索] ${q}`);
+  if (!list.length) {
+    lines.push(locale === 'en' ? '(No results)' : '（无结果）');
+    return lines.join('\n');
+  }
+  list.slice(0, 10).forEach((r, idx) => {
+    lines.push(`${idx + 1}. ${r.title}`);
+    if (r.url) lines.push(`   ${r.url}`);
+    if (r.snippet) lines.push(`   ${r.snippet}`);
+  });
+  return lines.join('\n');
 }
 
 function buildFallbackBoard(goal, locale = 'zh-CN') {
@@ -832,9 +1428,13 @@ function stripHiddenDraft(board) {
 function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
   const outlineText = board.outline.map(node => `[${node.id}] ${node.title} (${node.status})`).join(' | ');
   const nodeDetails = board.outline.map(node => {
-    const content = board.nodes?.[node.id]?.content || '';
-    return `${node.id}: ${clipText(content, 240)}`;
+    const content = stripHtmlTags(board.nodes?.[node.id]?.content || '');
+    return `${node.id}: ${clipText(content, 420)}`;
   }).join('\n');
+  const currentNodeId = (board?.progress?.current_node_id || '').toString().trim();
+  const currentNodeTitle = board?.outline?.find?.(n => String(n?.id || '') === currentNodeId)?.title || '';
+  const currentNodeRaw = currentNodeId ? stripHtmlTags(board?.nodes?.[currentNodeId]?.content || '') : '';
+  const currentNodeFull = currentNodeRaw ? clipText(currentNodeRaw, 1800) : '';
   const hiddenDraft = clipText(board?.hidden_draft, 2400);
   const hiddenDraftBlock = hiddenDraft
     ? (locale === 'en'
@@ -854,51 +1454,99 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
       ])
     : [];
 
+  const guide = board?.teaching_guide && typeof board.teaching_guide === 'object' ? board.teaching_guide : null;
+  const clippedSources = buildClippedSourcesTextFromBoard(board, 5200);
+  const guideOverview = clipText(guide?.overview, 360);
+  const guideRules = Array.isArray(guide?.rules) ? guide.rules.map(r => clipText(r, 220)).filter(Boolean).slice(0, 8) : [];
+  const guideScript = Array.isArray(guide?.teacher_script) ? guide.teacher_script.slice(0, 6) : [];
+  const guideScriptText = guideScript.length
+    ? guideScript.map((s) => {
+      const focus = Array.isArray(s.focus_points) ? s.focus_points.filter(Boolean).slice(0, 4) : [];
+      const qs = Array.isArray(s.questions) ? s.questions.filter(Boolean).slice(0, 2) : [];
+      const header = locale === 'en' ? `Node ${s.node_id}` : `节点 ${s.node_id}`;
+      return [
+        `${header}`,
+        ...(focus.length ? focus.map(x => `- ${x}`) : []),
+        ...(qs.length ? qs.map(x => `${locale === 'en' ? 'Q:' : '问：'} ${x}`) : [])
+      ].join('\n');
+    }).join('\n\n')
+    : '';
+
   if (locale === 'en') {
     return [
       'You are Blackboard AI Realtime Teaching Agent.',
+      (Array.isArray(board?.pm_summary_bullets) && board.pm_summary_bullets.length)
+        ? `PM summary (user goal & constraints):\n${board.pm_summary_bullets.map(x => `- ${x}`).join('\n')}`
+        : '',
+      board?.learning_spec ? `LearningSpec:\n${JSON.stringify(board.learning_spec)}` : '',
       `Learning goal: ${board.goal}`,
       `Current node: ${board.progress.current_node_id}`,
+      (currentNodeFull ? `Current node content (latest, prioritize this):\n[${currentNodeId}] ${currentNodeTitle}\n${currentNodeFull}` : ''),
       `Board outline: ${outlineText}`,
+      guideOverview ? `Teaching guide overview: ${guideOverview}` : '',
       'Hard rules:',
       '- You cannot change board structure or add/remove nodes.',
       '- If user wants structure changes, ask them to clarify so backend can update.',
       '- Every reply must start with [Node:<id>] from the board outline.',
       '- Teaching content must stay aligned with the current node.',
+      '- You MAY quote from the Blackboard (current node content / board key points).',
+      '- Attention constraint applies to external materials only: you MUST ONLY cite from the provided "Allowed Sources" when quoting the user\'s uploaded documents. If more context is needed, ask the user to select text and expand attention scope.',
+      '- If the learner asks whether you can see their latest blackboard edits, answer clearly: yes, you can see the latest current node content provided above, then teach based on it.',
       '- Ask 1-3 short questions per turn (check understanding / guided practice).',
       '- Teaching style: do NOT read the board verbatim. Use it as outline, explain naturally.',
       '- Each turn focus on ONE key point: meaning/why, a tiny example or a step, then one short question.',
       '- If user is wrong: point out the issue, give a hint, let them retry (no full answer dump).',
       '- You may cite key formulas/keywords but avoid long verbatim board text.',
       '- Do NOT output LaTeX (no $$, \\(...\\), \\frac, \\int). Use plain-text math or Unicode symbols.',
-      '- Do not output full lesson passages; if user asks, refer to the board or ask to regenerate.',
+      '- You MAY quote short sentences from "Allowed Sources" when needed (1-3 lines). Do NOT paste long passages or the entire document.',
+      guideRules.length ? 'Teaching guide rules:' : '',
+      guideRules.length ? guideRules.map(r => `- ${r}`).join('\n') : '',
+      clippedSources ? 'Allowed Sources (ONLY cite these):' : '',
+      clippedSources || '',
+      guideScriptText ? 'Teaching script (follow but keep natural):' : '',
+      guideScriptText || '',
       'Board key points (do not read verbatim):',
       nodeDetails,
       ...hiddenDraftBlock
-    ].join('\n');
+    ].filter(Boolean).join('\n');
   }
 
   return [
     '你是 Blackboard AI 的 Realtime Teaching Agent。',
+    (Array.isArray(board?.pm_summary_bullets) && board.pm_summary_bullets.length)
+      ? `项目经理总结（用户目标与约束）：\n${board.pm_summary_bullets.map(x => `- ${x}`).join('\n')}`
+      : '',
+    board?.learning_spec ? `LearningSpec：\n${JSON.stringify(board.learning_spec)}` : '',
     `学习目标：${board.goal}`,
     `当前进度节点：${board.progress.current_node_id}`,
+    (currentNodeFull ? `当前节点最新正文（优先参考这一段）：\n[${currentNodeId}] ${currentNodeTitle}\n${currentNodeFull}` : ''),
     `黑板结构：${outlineText}`,
+    guideOverview ? `教案摘要：${guideOverview}` : '',
     '硬约束：',
     '- 你不能修改黑板结构，不能新增或删除节点。',
     '- 若用户想改结构，只能建议其明确表达，再由后端更新。',
     '- 每次回答必须以 [Node:<id>] 开头，且 id 必须来自黑板 outline。',
     '- 讲解内容必须引用对应节点，不得脱离黑板。',
+    '- 你可以引用黑板内容（当前节点最新正文 / 黑板要点）。',
+    '- 注意力约束只针对“材料/原文”：你只能引用“允许引用范围（Allowed Sources）”里的材料片段。若用户需要更多原文，请引导其在材料区框选并点击“增加讲师注意力篇幅”，下一轮才可引用新增片段。',
+    '- 若学习者问“你能否看到我刚编辑/新增的黑板内容”，请明确回答：能看到（你已获得当前节点最新正文），然后围绕新增内容继续讲解。',
     '- 教学阶段每轮最多提出 1–3 个问题（用于检查理解/引导练习）。',
     '- 教学风格：不要逐字念板书。把板书当成“提纲”，用更口语、更解释性的方式讲清楚。',
     '- 每轮尽量只讲 1 个关键点：解释含义/为什么、给一个微型例子或一步推导/解题思路，然后提出 1 个简短问题等待用户回答。',
     '- 若用户回答不对：先指出错在何处，再给提示让他重试，而不是直接抛出完整答案。',
     '- 你可以引用板书中的关键公式/词汇，但不要大段复述板书正文。',
     '- 不要输出 LaTeX/公式源码（如 $$、\\(\\)、\\frac、\\int），用普通文本或 Unicode 数学符号表达。',
-    '- 不要在对话区输出“完整课文/长对话原文”。若用户要原文，提示其看左侧黑板或触发“生成课文/生成板书”更新后呈现。',
+    '- 允许在需要时引用“允许引用范围（Allowed Sources）”内的短句（1–3 行），但禁止粘贴整段长文/全文。',
+    guideRules.length ? '教案规则：' : '',
+    guideRules.length ? guideRules.map(r => `- ${r}`).join('\n') : '',
+    clippedSources ? '允许引用范围（只能引用以下材料片段）：' : '',
+    clippedSources || '',
+    guideScriptText ? '讲解脚本（按节点推进，保持自然口语）：' : '',
+    guideScriptText || '',
     '黑板要点（不要逐字朗读，仅用于对齐讲解）：',
     nodeDetails,
     ...hiddenDraftBlock
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 async function callTextTutorModel(userText, instructions = DEFAULT_INSTRUCTIONS) {
@@ -908,7 +1556,8 @@ async function callTextTutorModel(userText, instructions = DEFAULT_INSTRUCTIONS)
   }
 
   const messages = [];
-  const safeInstructions = clipText(instructions, 2000);
+  // 板书课堂需要更长的系统指令（含当前节点正文、Allowed Sources 等）
+  const safeInstructions = clipText(instructions, 12000);
   if (safeInstructions) {
     messages.push({ role: 'system', content: safeInstructions });
   }
@@ -940,10 +1589,12 @@ async function callResponsesApiForJson(systemPrompt, userPrompt, options = {}) {
     const safeOptions = options && typeof options === 'object' ? options : {};
     const { model: modelOverride, ...restOptions } = safeOptions;
     const model = clipText(modelOverride, 80) || OPENAI_STRUCTURE_MODEL;
+    const supportsTemperature = !/^o\d/i.test(model) && !/^gpt-5/i.test(model);
 
     const finalOptions = {};
     Object.entries(restOptions).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
+      if (key === 'temperature' && !supportsTemperature) return;
       finalOptions[key] = value;
     });
 
@@ -1035,10 +1686,12 @@ async function callResponsesApiForText(systemPrompt, userPrompt, options = {}) {
     const safeOptions = options && typeof options === 'object' ? options : {};
     const { model: modelOverride, ...restOptions } = safeOptions;
     const model = clipText(modelOverride, 80) || OPENAI_STRUCTURE_MODEL;
+    const supportsTemperature = !/^o\d/i.test(model) && !/^gpt-5/i.test(model);
 
     const finalOptions = {};
     Object.entries(restOptions).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
+      if (key === 'temperature' && !supportsTemperature) return;
       finalOptions[key] = value;
     });
 
@@ -1081,12 +1734,13 @@ async function callResponsesApiForText(systemPrompt, userPrompt, options = {}) {
   return (text || '').toString().trim();
 }
 
-async function generateBoard(goal, locale = 'zh-CN') {
+async function generateBoard(goal, locale = 'zh-CN', modelOverride = null) {
   const fallback = buildFallbackBoard(goal, locale);
   if (!OPENAI_API_KEY && !OPENROUTER_API_KEY) return fallback;
 
   const spec = parseGoalSpec(goal, locale);
   const domain = inferBoardDomain(goal, locale);
+  const boardModel = clipText(modelOverride, 80) || OPENAI_STRUCTURE_MODEL;
   const systemPrompt = locale === 'en'
     ? 'You are Blackboard Architect Agent. Return strict JSON only.'
     : '你是 Blackboard Architect Agent。只返回严格JSON。';
@@ -1162,7 +1816,7 @@ ${(spec.notes || []).map(x => `- ${x}`).join('\n') || '- 无'}`;
   try {
     // 默认用结构化更强的模型生成板书，避免跑题
     const result1 = await callStructuredJsonWithFallback(systemPrompt, userPrompt, {
-      model: OPENAI_STRUCTURE_MODEL,
+      model: boardModel,
       temperature: 0.2
     });
     const raw1 = result1.raw;
@@ -1177,7 +1831,7 @@ ${(spec.notes || []).map(x => `- ${x}`).join('\n') || '- 无'}`;
         ? `${userPrompt}\n\nIMPORTANT: Your previous output was off-topic or too chatty. Regenerate a correct MATH blackboard.`
         : `${userPrompt}\n\n重要：上一次输出跑题/口语化/不是板书。请重新生成【正确的】板书。`;
       const result2 = await callStructuredJsonWithFallback(retrySystem, retryUser, {
-        model: OPENAI_STRUCTURE_MODEL,
+        model: boardModel,
         temperature: 0.15
       });
       const raw2 = result2.raw;
@@ -1187,7 +1841,7 @@ ${(spec.notes || []).map(x => `- ${x}`).join('\n') || '- 无'}`;
       const board = normalizeBoardPayload(raw2, goal, locale);
       board.meta.source = OPENAI_API_KEY ? modelUsed : OPENROUTER_STRUCTURE_MODEL;
       if (fallbackUsed && OPENAI_API_KEY) {
-        board.meta.fallback_from = OPENAI_STRUCTURE_MODEL;
+        board.meta.fallback_from = boardModel;
         if (fallbackError) board.meta.fallback_reason = clipText(fallbackError, 240);
       }
       board.meta.regenerated = true;
@@ -1196,7 +1850,7 @@ ${(spec.notes || []).map(x => `- ${x}`).join('\n') || '- 无'}`;
     const board = normalizeBoardPayload(raw1, goal, locale);
     board.meta.source = OPENAI_API_KEY ? modelUsed : OPENROUTER_STRUCTURE_MODEL;
     if (fallbackUsed && OPENAI_API_KEY) {
-      board.meta.fallback_from = OPENAI_STRUCTURE_MODEL;
+      board.meta.fallback_from = boardModel;
       if (fallbackError) board.meta.fallback_reason = clipText(fallbackError, 240);
     }
     return board;
@@ -1219,6 +1873,13 @@ function buildFallbackPatch(board, userInput, locale = 'zh-CN') {
   const currentNodeId = board.progress.current_node_id;
   const nextNodeId = getNextNodeId(board, currentNodeId);
   const ops = [];
+
+  // Prefer appending exercises/examples to current node
+  if (/例题|练习|题目|出题|做几道|再来几道|quiz|exercise|problems?/.test(text)) {
+    const seed = clipText(userInput, 320);
+    ops.push({ op: 'append_examples', node_id: currentNodeId, examples: [seed] });
+    return { operations: ops, rationale: locale === 'en' ? 'User requests more exercises; append to current node examples.' : '用户要求补充例题/练习，追加到当前节点示例中。' };
+  }
 
   if (/下一章|下一节|next|move on/.test(text)) {
     ops.push({ op: 'set_current_node', node_id: nextNodeId });
@@ -1252,11 +1913,15 @@ function normalizePatch(rawPatch) {
       const hasTitle = Object.prototype.hasOwnProperty.call(obj, 'title');
       const hasContent = Object.prototype.hasOwnProperty.call(obj, 'content');
       const hasStatus = Object.prototype.hasOwnProperty.call(obj, 'status');
+      const hasExamples = Object.prototype.hasOwnProperty.call(obj, 'examples');
       return {
         op: clipText(obj?.op, 40),
         node_id: clipText(obj?.node_id, 20),
         title: hasTitle ? clipText(obj?.title, 80) : undefined,
         content: hasContent ? clipText(obj?.content, 6000) : undefined,
+        examples: hasExamples && Array.isArray(obj?.examples)
+          ? obj.examples.map(x => clipText(x, 1200)).filter(Boolean).slice(0, 12)
+          : undefined,
         status: hasStatus ? clipText(obj?.status, 20) : undefined
       };
     }).filter(op => op.op),
@@ -1280,11 +1945,14 @@ Return:
 {
   "rationale":"string",
   "operations":[
-    {"op":"add_node|update_node|remove_node|set_status|set_current_node","node_id":"string","title":"string","content":"string","status":"pending|teaching|done|skipped"}
+    {"op":"add_node|update_node|append_examples|remove_node|set_status|set_current_node","node_id":"string","title":"string","content":"string","examples":["string"],"status":"pending|teaching|done|skipped"}
   ]
 }
 Rules:
 - Minimal operations, no unrelated nodes.
+- Never rewrite the whole board. Prefer small incremental edits to the CURRENT board.
+- Do NOT use remove_node unless the user explicitly asks to delete something.
+- When user asks for more exercises/examples, use append_examples on the most relevant node (usually current node).
 - Keep "blackboard note" style: concise bullets, short lines, clear paragraphs.
 - Do NOT add tangents (e.g., physics analogies) unless user explicitly asks.
 - Do NOT add greetings / teacher speeches / disclaimers.
@@ -1299,11 +1967,14 @@ ${userInput}
 {
   "rationale":"string",
   "operations":[
-    {"op":"add_node|update_node|remove_node|set_status|set_current_node","node_id":"string","title":"string","content":"string","status":"pending|teaching|done|skipped"}
+    {"op":"add_node|update_node|append_examples|remove_node|set_status|set_current_node","node_id":"string","title":"string","content":"string","examples":["string"],"status":"pending|teaching|done|skipped"}
   ]
 }
 规则：
 - 尽量最少操作，不引入无关节点。
+- 严禁“整板重写/看起来像新生成一张板书”：必须在【当前板书】基础上做增量修改。
+- 除非用户明确要求删除，否则不要使用 remove_node。
+- 当用户要“再出几道例题/练习/题目”：优先对最相关节点（通常是当前节点）使用 append_examples 追加题目，而不是重写正文。
 - 保持“板书笔记”风格：要点精炼、短句分行、自然段清晰。
 - 不要跨学科发散（例如物理类类比）除非用户明确要求。
 - 不要写同学们好/老师讲话/免责声明等口语与套话。
@@ -1356,7 +2027,33 @@ function applyPatchToBoard(board, patch) {
       if (op.content !== undefined) {
         next.nodes[op.node_id].content = op.content;
       }
+      if (Array.isArray(op.examples)) {
+        next.nodes[op.node_id].examples = op.examples.slice(0, 40);
+      }
       if (op.title) outlineById.get(op.node_id).title = op.title;
+      applied.push(op);
+      return;
+    }
+
+    if (op.op === 'append_examples') {
+      if (!outlineById.has(op.node_id)) return;
+      if (!next.nodes[op.node_id]) next.nodes[op.node_id] = { content: '', examples: [] };
+      if (!Array.isArray(next.nodes[op.node_id].examples)) next.nodes[op.node_id].examples = [];
+      const incoming = Array.isArray(op.examples) ? op.examples : [];
+      const merged = [...next.nodes[op.node_id].examples, ...incoming]
+        .map(x => (x ?? '').toString().trim())
+        .filter(Boolean);
+      // dedupe + cap
+      const seen = new Set();
+      const deduped = [];
+      for (const item of merged) {
+        const key = item.slice(0, 260);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(item);
+        if (deduped.length >= 40) break;
+      }
+      next.nodes[op.node_id].examples = deduped;
       applied.push(op);
       return;
     }
@@ -1401,7 +2098,14 @@ function toPublicBoard(board) {
     outline: board.outline,
     nodes: board.nodes,
     progress: board.progress,
-    meta: board.meta
+    meta: board.meta,
+    attention_scope: board.attention_scope || null,
+    teaching_guide_overview: clipText(board?.teaching_guide?.overview, 420) || '',
+    pm_summary_bullets: Array.isArray(board?.pm_summary_bullets) ? board.pm_summary_bullets : [],
+    learning_spec: board?.learning_spec || null,
+    sources: Array.isArray(board?.sources)
+      ? board.sources.map(s => ({ source_id: s.source_id, title: s.title }))
+      : []
   };
 }
 
@@ -1444,20 +2148,97 @@ async function handleHttpRequest(req, res) {
     return;
   }
 
+  if (req.method === 'POST' && url.pathname === '/import-board') {
+    const body = await parseBody(req);
+    const incoming = body.board && typeof body.board === 'object' ? body.board : null;
+    if (!incoming) {
+      sendJson(res, 400, { ok: false, message: 'board 必填' });
+      return;
+    }
+    const boardId = clipText(incoming.board_id || body.board_id, 80);
+    if (!boardId) {
+      sendJson(res, 400, { ok: false, message: 'board_id 必填' });
+      return;
+    }
+    const outline = Array.isArray(incoming.outline) ? incoming.outline : [];
+    const nodes = (incoming.nodes && typeof incoming.nodes === 'object') ? incoming.nodes : {};
+    const progress = (incoming.progress && typeof incoming.progress === 'object') ? incoming.progress : {};
+    if (!outline.length || !Object.keys(nodes).length) {
+      sendJson(res, 400, { ok: false, message: 'board 数据不完整（outline/nodes）' });
+      return;
+    }
+    const imported = {
+      ...incoming,
+      board_id: boardId,
+      outline,
+      nodes,
+      progress: {
+        current_node_id: clipText(progress.current_node_id || outline[0]?.id || '', 40) || (outline[0]?.id || ''),
+        mastery_score: Number.isFinite(Number(progress.mastery_score)) ? Number(progress.mastery_score) : 0
+      },
+      meta: (incoming.meta && typeof incoming.meta === 'object') ? { ...incoming.meta } : {}
+    };
+    imported.meta.updated_at = new Date().toISOString();
+    imported.meta.imported_from_client = true;
+    BOARD_STORE.set(boardId, imported);
+    BOARD_AUDIT_LOG.push({
+      ts: new Date().toISOString(),
+      type: 'import_board',
+      source: 'client_snapshot',
+      board_id: boardId,
+      goal: clipText(imported.goal || '', 120)
+    });
+    sendJson(res, 200, { ok: true, board: toPublicBoard(imported) });
+    return;
+  }
+
   if (req.method === 'POST' && url.pathname === '/create-board') {
     const body = await parseBody(req);
     // 允许更长的澄清信息（学习目标 + 水平 + 约束），避免过早截断影响板书生成质量
     const goal = clipText(body.goal || body.user_input, 2400);
+    const rawSources = body.sources || body.source || body.materials || null;
+    const pmSummaryBullets = Array.isArray(body.pm_summary_bullets) ? body.pm_summary_bullets : [];
+    const learningSpec = body.learning_spec && typeof body.learning_spec === 'object' ? body.learning_spec : null;
     const bodyLocale = body.locale === 'en' ? 'en' : locale;
     if (!goal) {
       sendJson(res, 400, { ok: false, message: 'goal 不能为空' });
       return;
     }
-    const board = await generateBoard(goal, bodyLocale);
+    const { sources: normalizedSources, chunks } = buildSourceChunks(rawSources, bodyLocale);
+    const rawSubjectType = (learningSpec?.subject_type || body.subject_type || '').toString().trim().toLowerCase();
+    const subjectType = (rawSubjectType === 'science' || rawSubjectType === 'humanities' || rawSubjectType === 'mixed')
+      ? rawSubjectType
+      : '';
+    const boardModel = subjectType === 'science'
+      ? OPENAI_BOARD_MODEL_SCIENCE
+      : (subjectType === 'humanities' || subjectType === 'mixed')
+        ? OPENAI_BOARD_MODEL_HUMANITIES
+        : null;
+    const board = await generateBoard(goal, bodyLocale, boardModel);
     const hiddenDraft = await generateHiddenDraft(board, bodyLocale);
     if (hiddenDraft) {
       board.hidden_draft = hiddenDraft;
     }
+    board.sources = normalizedSources;
+    board.sources_chunks = chunks;
+    board.pm_summary_bullets = pmSummaryBullets
+      .map(x => clipText(x, 200))
+      .filter(Boolean)
+      .slice(0, 10);
+    board.learning_spec = learningSpec;
+    board.meta = board.meta || {};
+    if (subjectType) board.meta.pm_subject_type = subjectType;
+    if (boardModel) board.meta.board_model_routed = boardModel;
+    const selected = await selectInitialAttentionChunks(goal, chunks, bodyLocale);
+    const allowedChunkIds = Array.isArray(selected?.chunk_ids) ? selected.chunk_ids : [];
+    board.attention_scope = {
+      version: 1,
+      created_at: new Date().toISOString(),
+      rationale: clipText(selected?.rationale, 240),
+      allowed_chunk_ids: allowedChunkIds,
+      extra_snippets: []
+    };
+    board.teaching_guide = await generateTeachingGuide(goal, board, chunks, allowedChunkIds, bodyLocale);
     BOARD_STORE.set(board.board_id, board);
     BOARD_AUDIT_LOG.push({
       ts: new Date().toISOString(),
@@ -1466,7 +2247,138 @@ async function handleHttpRequest(req, res) {
       board_id: board.board_id,
       goal: clipText(goal, 120)
     });
-    sendJson(res, 200, { ok: true, board: toPublicBoard(board) });
+    sendJson(res, 200, {
+      ok: true,
+      board: toPublicBoard(board),
+      teaching_guide: board.teaching_guide,
+      attention_scope: board.attention_scope
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/vision-extract') {
+    const body = await parseBody(req);
+    const imageBase64 = body.image_base64 || body.image || '';
+    const mime = clipText(body.mime || body.mime_type || body.type, 80) || 'image/png';
+    const filename = clipText(body.filename || body.name, 160) || '';
+    const bodyLocale = body.locale === 'en' ? 'en' : locale;
+    if (!imageBase64) {
+      sendJson(res, 400, { ok: false, message: 'image_base64 必填' });
+      return;
+    }
+    try {
+      const result = await extractTextFromImage(imageBase64, mime, filename, bodyLocale);
+      sendJson(res, 200, { ok: true, result });
+    } catch (error) {
+      console.error('vision-extract failed:', error);
+      sendJson(res, 502, { ok: false, message: `图片识别失败: ${error.message}` });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/web-search') {
+    const body = await parseBody(req);
+    const query = clipText(body.query || body.q, 300) || '';
+    const maxResults = Number.isFinite(Number(body.max_results)) ? Math.max(1, Math.min(10, Number(body.max_results))) : 6;
+    const bodyLocale = body.locale === 'en' ? 'en' : locale;
+    if (!query) {
+      sendJson(res, 400, { ok: false, message: 'query 必填' });
+      return;
+    }
+    try {
+      let results = [];
+      if (WEB_SEARCH_PROVIDER === 'duckduckgo') {
+        results = await webSearchDuckDuckGoHtml(query, maxResults);
+      } else {
+        results = await webSearchDuckDuckGoHtml(query, maxResults);
+      }
+      const material_text = buildWebSearchMaterialText(query, results, bodyLocale);
+      sendJson(res, 200, { ok: true, provider: WEB_SEARCH_PROVIDER, query, results, material_text });
+    } catch (error) {
+      console.error('web-search failed:', error);
+      sendJson(res, 502, { ok: false, message: `网络搜索失败: ${error.message}` });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/pm-analyze') {
+    const body = await parseBody(req);
+    const userText = clipText(body.user_text || body.text || body.user_input, 3000);
+    const bodyLocale = body.locale === 'en' ? 'en' : locale;
+    const previousSpec = (body.previous_spec && typeof body.previous_spec === 'object') ? body.previous_spec : null;
+    const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+    if (!userText) {
+      sendJson(res, 400, { ok: false, message: 'user_text 必填' });
+      return;
+    }
+    try {
+      const result = await analyzePmLearningSpec(userText, attachments, previousSpec, bodyLocale);
+      sendJson(res, 200, { ok: true, result });
+    } catch (error) {
+      console.error('pm-analyze failed:', error);
+      sendJson(res, 502, { ok: false, message: `PM 分析失败: ${error.message}` });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/update-attention-scope') {
+    const body = await parseBody(req);
+    const boardId = clipText(body.board_id, 80);
+    const snippet = clipText(body.snippet || body.text, 6000);
+    const sourceId = clipText(body.source_id, 80) || 'user_selection';
+    const bodyLocale = body.locale === 'en' ? 'en' : locale;
+    if (!boardId || !snippet) {
+      sendJson(res, 400, { ok: false, message: 'board_id 与 snippet 必填' });
+      return;
+    }
+    const board = BOARD_STORE.get(boardId);
+    if (!board) {
+      sendJson(res, 404, { ok: false, message: 'board 不存在' });
+      return;
+    }
+    if (!board.attention_scope || typeof board.attention_scope !== 'object') {
+      board.attention_scope = { version: 1, created_at: new Date().toISOString(), rationale: '', allowed_chunk_ids: [], extra_snippets: [] };
+    }
+    const id = `sel_${crypto.randomUUID()}`;
+    const extra = Array.isArray(board.attention_scope.extra_snippets) ? board.attention_scope.extra_snippets : [];
+    extra.push({
+      id,
+      source_id: sourceId,
+      text: snippet,
+      created_at: new Date().toISOString()
+    });
+    // 去重：完全相同 snippet 不重复加入
+    const deduped = [];
+    const seen = new Set();
+    extra.forEach((item) => {
+      const key = `${item?.source_id || ''}::${(item?.text || '').toString().trim()}`;
+      if (!key.trim()) return;
+      if (seen.has(key)) return;
+      seen.add(key);
+      deduped.push(item);
+    });
+    board.attention_scope.extra_snippets = deduped.slice(-18);
+
+    if (body.regenerate_guide === true) {
+      const allowed = Array.isArray(board.attention_scope.allowed_chunk_ids) ? board.attention_scope.allowed_chunk_ids : [];
+      board.teaching_guide = await generateTeachingGuide(board.goal || '', board, board.sources_chunks || [], allowed, bodyLocale);
+    }
+    if (!board.meta || typeof board.meta !== 'object') board.meta = {};
+    board.meta.updated_at = new Date().toISOString();
+    BOARD_STORE.set(boardId, board);
+    BOARD_AUDIT_LOG.push({
+      ts: new Date().toISOString(),
+      type: 'update_attention_scope',
+      board_id: boardId,
+      source_id: sourceId,
+      snippet_len: snippet.length
+    });
+    sendJson(res, 200, {
+      ok: true,
+      board: toPublicBoard(board),
+      attention_scope: board.attention_scope,
+      teaching_guide: board.teaching_guide
+    });
     return;
   }
 
@@ -1630,7 +2542,7 @@ async function handleHttpRequest(req, res) {
       if (shouldUseOpenRouterAudioOutput()) {
         try {
           const messages = [];
-          const safeInstructions = clipText(instructions, 2000);
+          const safeInstructions = clipText(instructions, 12000);
           if (safeInstructions) messages.push({ role: 'system', content: safeInstructions });
           messages.push({ role: 'user', content: userText });
 
@@ -1913,7 +2825,7 @@ wss.on('connection', (clientWs, req) => {
           if (shouldUseOpenRouterAudioOutput()) {
             try {
               const messages = [];
-              const safeInstructions = clipText(sessionConfig.instructions || DEFAULT_INSTRUCTIONS, 2000);
+              const safeInstructions = clipText(sessionConfig.instructions || DEFAULT_INSTRUCTIONS, 12000);
               if (safeInstructions) messages.push({ role: 'system', content: safeInstructions });
               messages.push({ role: 'user', content: clipText(text, 3000) });
 
