@@ -538,7 +538,7 @@
           </div>
         </div>
 
-        <a id="nav-settings-link" href="设置页面.html" class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white ring-1 ring-slate-200 shadow-sm hover:shadow-md hover:bg-white press">
+        <a id="nav-settings-link" href="settings.html" class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white ring-1 ring-slate-200 shadow-sm hover:shadow-md hover:bg-white press">
           <iconify-icon icon="lucide:settings" class="text-[20px] text-slate-700"></iconify-icon>
         </a>
       </div>
@@ -654,7 +654,7 @@
                   <button class="drag-handle" data-drag-handle aria-label="拖拽布局" data-i18n-aria="drag_handle">
                     <iconify-icon icon="lucide:grip" class="text-[18px]"></iconify-icon>
                   </button>
-                  <a href="设置页面.html" onclick="event.stopPropagation();" class="flex items-center gap-2 px-4 py-2 rounded-full bg-sky-50 text-sky-600 text-[13px] font-bold press">
+                  <a href="settings.html" onclick="event.stopPropagation();" class="flex items-center gap-2 px-4 py-2 rounded-full bg-sky-50 text-sky-600 text-[13px] font-bold press">
                     <span class="text-[11px] bg-sky-500 text-white px-1.5 rounded leading-tight">AI</span>
                     <span data-i18n="settings_label">设置</span>
                     <iconify-icon icon="lucide:chevron-right"></iconify-icon>
@@ -1017,7 +1017,7 @@
         try { forceStopOpenAIRealtimeVoiceCall(); } catch (e) { /* ignore */ }
       }
       persistSessionToRecords('back');
-      window.location.href = 'ai语言学习平台-主页.html';
+      window.location.href = 'index.html';
     }
 
     function handleOrbClick(event) {
@@ -2007,6 +2007,69 @@
           scroller.scrollTop = scroller.scrollHeight;
         });
       }
+    }
+
+    let chatRenderQueued = false;
+    let streamingAssistantMsg = null;
+
+    function scheduleChatRender() {
+      if (chatRenderQueued) return;
+      chatRenderQueued = true;
+      requestAnimationFrame(() => {
+        chatRenderQueued = false;
+        renderChatMessages();
+      });
+    }
+
+    function ensureStreamingAssistantMessage() {
+      if (streamingAssistantMsg && sessionRuntime.messages.includes(streamingAssistantMsg)) {
+        return streamingAssistantMsg;
+      }
+      streamingAssistantMsg = {
+        role: 'assistant',
+        text: '',
+        ts: new Date().toISOString(),
+        streaming: true
+      };
+      sessionRuntime.messages.push(streamingAssistantMsg);
+      if (sessionRuntime.messages.length > 300) {
+        sessionRuntime.messages = sessionRuntime.messages.slice(-300);
+      }
+      markSessionActivity();
+      return streamingAssistantMsg;
+    }
+
+    function updateStreamingAssistantMessage(text) {
+      const next = (text || '').toString();
+      if (!next.trim()) return;
+      const msg = ensureStreamingAssistantMessage();
+      msg.text = next;
+      scheduleChatRender();
+    }
+
+    function finalizeStreamingAssistantMessage(finalText) {
+      const clean = (finalText || '').toString().trim();
+      if (!clean) {
+        streamingAssistantMsg = null;
+        return;
+      }
+      if (streamingAssistantMsg && sessionRuntime.messages.includes(streamingAssistantMsg)) {
+        streamingAssistantMsg.text = clean;
+        streamingAssistantMsg.streaming = false;
+        streamingAssistantMsg = null;
+        scheduleChatRender();
+        return;
+      }
+      pushSessionMessage('assistant', clean);
+      streamingAssistantMsg = null;
+    }
+
+    function resetRealtimeAssistantTextState() {
+      streamingAssistantMsg = null;
+      sessionRuntime.aiDeltaBuffer = '';
+      sessionRuntime.aiDoneText = '';
+      sessionRuntime.aiTextChannel = '';
+      realtimeVoice.currentResponseHadAudio = false;
     }
 
     function pushSessionMessage(role, text) {
@@ -3751,7 +3814,7 @@
                 console.error('Realtime event error:', evt);
                 pushSessionMessage('system', msg);
                 window.alert(msg);
-                sessionRuntime.aiDeltaBuffer = '';
+                resetRealtimeAssistantTextState();
                 return;
               }
 
@@ -3764,6 +3827,7 @@
                 }
                 const text = normalizeDeltaText(evt);
                 sessionRuntime.aiDeltaBuffer += text;
+                updateStreamingAssistantMessage(sessionRuntime.aiDeltaBuffer);
                 const match = text.match(/\[(?:Node|节点)\s*:?\s*([0-9A-Za-z_-]+)\]/i);
                 if (match && match[1]) {
                   setCurrentNode(match[1]);
@@ -3784,6 +3848,10 @@
                 }
                 const doneText = normalizeDoneText(evt);
                 sessionRuntime.aiDoneText = doneText;
+                // 有些实现可能没有 delta；done 到来时也应尽快显示文字
+                if (!sessionRuntime.aiDeltaBuffer.trim() && doneText.trim()) {
+                  updateStreamingAssistantMessage(doneText);
+                }
                 if (doneText) {
                   const match = doneText.match(/\[(?:Node|节点)\s*:?\s*([0-9A-Za-z_-]+)\]/i);
                   if (match && match[1]) {
@@ -3818,16 +3886,14 @@
                 }
                 const finalAiText = sessionRuntime.aiDeltaBuffer.trim();
                 if (finalAiText) {
-                  pushSessionMessage('assistant', finalAiText);
+                  finalizeStreamingAssistantMessage(finalAiText);
                   if (voiceFallback.skipNextTts) {
                     voiceFallback.skipNextTts = false;
                   } else if (!realtimeVoice.currentResponseHadAudio) {
                     maybeSpeakAi(finalAiText);
                   }
                 }
-                sessionRuntime.aiDeltaBuffer = '';
-                sessionRuntime.aiDoneText = '';
-                sessionRuntime.aiTextChannel = '';
+                resetRealtimeAssistantTextState();
                 realtimeVoice.currentResponseHadAudio = false;
               }
             } else if (payload.type === 'board_context_bound' && payload.board) {
@@ -4325,7 +4391,7 @@
             try { forceStopOpenAIRealtimeVoiceCall(); } catch (e) { /* ignore */ }
           }
           persistSessionToRecords('end_call');
-          window.location.href = 'ai语言学习平台-主页.html';
+          window.location.href = 'index.html';
         });
       }
 

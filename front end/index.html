@@ -467,7 +467,7 @@
 
                 <!-- Middle Section: Notebook Card -->
                 <div class="w-full max-w-sm mb-auto">
-            <a href="笔记本页面.html" id="notebook-btn" class="glass block p-6 rounded-[2rem] shadow-xl shadow-slate-200 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
+            <a href="notebook.html" id="notebook-btn" class="glass block p-6 rounded-[2rem] shadow-xl shadow-slate-200 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="w-14 h-14 rounded-2xl bg-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
@@ -515,7 +515,7 @@
                 <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
                 <span class="text-[10px] font-bold" data-i18n="nav_home">首页</span>
             </button>
-            <a href="课程工坊页面.html" class="flex flex-col items-center gap-1 text-slate-300 hover:text-sky-400 transition-colors">
+            <a href="course-workshop.html" class="flex flex-col items-center gap-1 text-slate-300 hover:text-sky-400 transition-colors">
                 <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
                 <span class="text-[10px] font-bold" data-i18n="nav_rank">课程工坊</span>
             </a>
@@ -700,7 +700,7 @@
             if (!startBtn) return;
 
             startBtn.addEventListener('click', function () {
-                window.location.href = 'AI语音通话学习模式.html';
+                window.location.href = 'ai-voice-call.html';
             });
         })();
 
@@ -1022,7 +1022,7 @@
                     const display = getPackDisplay(pack);
                     const item = document.createElement('div');
                     item.className = 'sidebar-item';
-                    item.dataset.href = `成套课程页面.html?course=${encodeURIComponent(pack.id)}`;
+                    item.dataset.href = `course-bundles.html?course=${encodeURIComponent(pack.id)}`;
                     item.dataset.itemId = pack.id;
                     item.dataset.itemType = 'pack';
                     const count = Array.isArray(pack.lessons) ? pack.lessons.length : 0;
@@ -1252,7 +1252,7 @@
                         if (session) {
                             localStorage.setItem('linguify-last-session', JSON.stringify({ ...session, id }));
                         }
-                        window.location.href = 'AI语音通话学习模式.html?session=' + encodeURIComponent(id);
+                        window.location.href = 'ai-voice-call.html?session=' + encodeURIComponent(id);
                     });
                 }
 
@@ -1368,7 +1368,7 @@
 
             myProfileBtn.addEventListener('click', function () {
                 // 跳转到"我的设置"页面
-                window.location.href = '我的设置页面.html';
+                window.location.href = 'my-settings.html';
             });
         })();
 
