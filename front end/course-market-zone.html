@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>课程分区 - Linguify</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%); }
+    h1, h2, h3, .display { font-family: 'Outfit', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <div class="max-w-7xl mx-auto px-6 py-8 pb-24">
+    <header class="flex flex-wrap gap-3 items-center justify-between mb-8">
+      <div>
+        <p class="text-sm text-sky-700 font-semibold">分区页 / Category Zone</p>
+        <h1 id="zone-title" class="text-3xl font-extrabold display">课程分区</h1>
+        <p id="zone-desc" class="text-slate-500 mt-1">按教学内容和课程性质细分学习市场。</p>
+      </div>
+      <div class="flex gap-2 text-sm">
+        <a href="course-workshop.html" class="px-4 py-2 rounded-xl bg-white border border-slate-200">工坊首页</a>
+        <a href="course-market-discover.html" class="px-4 py-2 rounded-xl bg-white border border-slate-200">发现页</a>
+        <a href="course-market-filter.html" class="px-4 py-2 rounded-xl bg-white border border-slate-200">筛选中心</a>
+      </div>
+    </header>
+
+    <section class="grid lg:grid-cols-[280px,1fr] gap-6">
+      <aside class="bg-white border border-slate-100 rounded-3xl p-5 h-fit shadow-sm">
+        <p class="text-sm font-bold text-slate-700 mb-3">主分区</p>
+        <div class="grid gap-2 text-sm" id="main-zone-links"></div>
+        <hr class="my-4" />
+        <p class="text-sm font-bold text-slate-700 mb-3">专题标签</p>
+        <div class="flex flex-wrap gap-2" id="topic-tags"></div>
+      </aside>
+
+      <main>
+        <div class="grid md:grid-cols-3 gap-5" id="course-list"></div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const zones = {
+        all: {
+          title: '全部分区总览',
+          desc: '像应用商店一样浏览全品类课程，按学科和学习目的组合选课。',
+          tags: ['入门', '考证', '项目制', '直播答疑', '短课'],
+          courses: [
+            { name: '法语 30 天零基础', type: '语言入门', level: 'L1', href: 'course-market-course.html?course=french-journey' },
+            { name: '微积分从零到一', type: '理科强化', level: 'L2', href: 'course-market-course.html?course=calc-zero-to-one' },
+            { name: 'UI 设计思维与系统', type: '设计职业', level: 'L2', href: 'course-market-course.html?course=ui-design-system' },
+            { name: 'Python 数据挖掘', type: '编程实战', level: 'L3', href: 'course-market-course.html?course=python-data-mining' },
+            { name: '宏观经济学框架', type: '社科基础', level: 'L2', href: 'course-market-course.html?course=macro-economics' },
+            { name: '世界现代史专题', type: '人文进阶', level: 'L2', href: 'course-market-course.html?course=modern-world-history' }
+          ]
+        },
+        languages: {
+          title: '语言学习区',
+          desc: '聚焦口语表达、考试成绩和跨文化沟通。',
+          tags: ['口语', '听力', '写作', '雅思', '商务沟通'],
+          courses: [
+            { name: '商务英语口语进阶', type: '职业沟通', level: 'L2', href: 'course-market-course.html?course=business-english' },
+            { name: '西班牙语 B1 冲刺', type: '欧语能力', level: 'L2', href: 'course-market-course.html?course=spanish-b1' },
+            { name: '日语 N2 高频语法', type: '考试向', level: 'L3', href: 'course-market-course.html?course=japanese-n2' }
+          ]
+        },
+        science: {
+          title: '自然科学区',
+          desc: '从基础理论到实验应用，覆盖数学、物理、化学、生物。',
+          tags: ['数学', '物理', '化学', '生物', '实验'],
+          courses: [
+            { name: '量子力学导引', type: '物理进阶', level: 'L3', href: 'course-market-course.html?course=quantum-intro' },
+            { name: '生物科学方法论', type: '生物研究', level: 'L2', href: 'course-market-course.html?course=biology-method' },
+            { name: '化学实验设计与安全', type: '实验课程', level: 'L2', href: 'course-market-course.html?course=chemistry-lab' }
+          ]
+        },
+        humanities: {
+          title: '人文社科区',
+          desc: '结合文本研读、案例讨论与历史脉络分析。',
+          tags: ['历史', '哲学', '经济', '政治', '写作'],
+          courses: [
+            { name: '世界现代史专题', type: '历史专题', level: 'L2', href: 'course-market-course.html?course=modern-world-history' },
+            { name: '政治哲学导论', type: '哲学思辨', level: 'L2', href: 'course-market-course.html?course=political-philosophy' },
+            { name: '宏观经济学实务', type: '社科应用', level: 'L2', href: 'course-market-course.html?course=macro-economics' }
+          ]
+        },
+        cs: {
+          title: '计算机科学区',
+          desc: '偏工程与实战，适合就业和项目能力提升。',
+          tags: ['Python', '算法', 'AI', '前端', '后端'],
+          courses: [
+            { name: 'Python 数据挖掘', type: '数据工程', level: 'L2', href: 'course-market-course.html?course=python-data-mining' },
+            { name: '算法面试强化营', type: '就业导向', level: 'L3', href: 'course-market-course.html?course=algo-interview' },
+            { name: 'AI 应用开发工作坊', type: '项目制', level: 'L3', href: 'course-market-course.html?course=ai-workshop' }
+          ]
+        },
+        bio: { title: '生物科学专题', desc: '生命科学课程集合。', tags: ['细胞', '遗传', '实验'], courses: [ { name: '生物科学方法论', type: '生物研究', level: 'L2', href: 'course-market-course.html?course=biology-method' } ] },
+        chemistry: { title: '化学实验专题', desc: '实验技能与安全规范。', tags: ['有机', '分析', '实验安全'], courses: [ { name: '化学实验设计与安全', type: '实验课程', level: 'L2', href: 'course-market-course.html?course=chemistry-lab' } ] },
+        history: { title: '世界历史专题', desc: '宏观历史结构与关键事件。', tags: ['近代', '现代', '文明'], courses: [ { name: '世界现代史专题', type: '历史专题', level: 'L2', href: 'course-market-course.html?course=modern-world-history' } ] },
+        economics: { title: '经济学专题', desc: '宏观框架与政策分析。', tags: ['增长', '货币', '政策'], courses: [ { name: '宏观经济学实务', type: '社科应用', level: 'L2', href: 'course-market-course.html?course=macro-economics' } ] },
+        politics: { title: '政治哲学专题', desc: '经典文本与现实议题。', tags: ['古典', '现代', '制度'], courses: [ { name: '政治哲学导论', type: '哲学思辨', level: 'L2', href: 'course-market-course.html?course=political-philosophy' } ] },
+        geography: { title: '地理测绘专题', desc: '空间认知与测绘工具。', tags: ['GIS', '地图', '测绘'], courses: [ { name: '地理测绘与GIS入门', type: '技能课', level: 'L2', href: 'course-market-course.html?course=gis-basic' } ] },
+        spanish: { title: '西语 B1 专题', desc: '中级语法和场景表达。', tags: ['口语', '语法', '听力'], courses: [ { name: '西班牙语 B1 冲刺', type: '欧语能力', level: 'L2', href: 'course-market-course.html?course=spanish-b1' } ] },
+        python: { title: 'Python 专题', desc: '数据分析与自动化开发。', tags: ['爬虫', '数据', '脚本'], courses: [ { name: 'Python 数据挖掘', type: '数据工程', level: 'L2', href: 'course-market-course.html?course=python-data-mining' } ] }
+      };
+
+      const url = new URL(window.location.href);
+      const zoneKey = url.searchParams.get('zone') || 'all';
+      const zone = zones[zoneKey] || zones.all;
+
+      document.title = `${zone.title} - Linguify`;
+      document.getElementById('zone-title').textContent = zone.title;
+      document.getElementById('zone-desc').textContent = zone.desc;
+
+      const mainLinks = [
+        ['all', '全部'], ['languages', '语言'], ['science', '自然科学'], ['humanities', '人文社科'], ['cs', '计算机']
+      ];
+      document.getElementById('main-zone-links').innerHTML = mainLinks.map(([key, label]) => {
+        const active = key === zoneKey;
+        return `<a href="course-market-zone.html?zone=${key}" class="px-3 py-2 rounded-xl border ${active ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 border-slate-200'}">${label}</a>`;
+      }).join('');
+
+      document.getElementById('topic-tags').innerHTML = zone.tags.map(tag =>
+        `<span class="px-3 py-1.5 rounded-full bg-sky-50 text-sky-700 text-xs font-semibold">${tag}</span>`
+      ).join('');
+
+      document.getElementById('course-list').innerHTML = zone.courses.map(course => `
+        <article class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold">${course.type}</span>
+            <span class="text-xs font-bold text-sky-700">${course.level}</span>
+          </div>
+          <h3 class="text-lg font-bold mb-2">${course.name}</h3>
+          <p class="text-sm text-slate-500 mb-4">按内容质量、完课率、口碑分排序，适合分区订阅浏览。</p>
+          <a href="${course.href}" class="inline-flex items-center gap-1 text-sm font-semibold text-sky-700">查看课程 <iconify-icon icon="lucide:arrow-right"></iconify-icon></a>
+        </article>
+      `).join('');
+    })();
+  </script>
+</body>
+</html>

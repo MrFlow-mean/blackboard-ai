@@ -61,23 +61,23 @@
             </a>
 
             <nav class="flex-1 space-y-1">
-                <a id="nav-discover" href="#" class="flex items-center gap-3 px-4 py-3 bg-sky-50 text-sky-600 rounded-2xl font-semibold transition-all">
+                <a id="nav-discover" href="course-market-discover.html" class="flex items-center gap-3 px-4 py-3 bg-sky-50 text-sky-600 rounded-2xl font-semibold transition-all">
                     <iconify-icon icon="lucide:compass"></iconify-icon>
                     <span data-i18n="nav_discover">发现课程</span>
                 </a>
-                <a id="nav-languages" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                <a id="nav-languages" href="course-market-zone.html?zone=languages" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
                     <iconify-icon icon="lucide:languages"></iconify-icon>
                     <span data-i18n="nav_languages">语言学习</span>
                 </a>
-                <a id="nav-science" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                <a id="nav-science" href="course-market-zone.html?zone=science" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
                     <iconify-icon icon="lucide:microscope"></iconify-icon>
                     <span data-i18n="nav_science">自然科学</span>
                 </a>
-                <a id="nav-humanities" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                <a id="nav-humanities" href="course-market-zone.html?zone=humanities" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
                     <iconify-icon icon="lucide:book-open"></iconify-icon>
                     <span data-i18n="nav_humanities">人文社科</span>
                 </a>
-                <a id="nav-cs" href="#" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
+                <a id="nav-cs" href="course-market-zone.html?zone=cs" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-2xl transition-all">
                     <iconify-icon icon="lucide:code-2"></iconify-icon>
                     <span data-i18n="nav_cs">计算机科学</span>
                 </a>
@@ -143,40 +143,40 @@
             <section class="mb-16">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-2xl font-bold text-slate-800 font-display" data-i18n="section_categories">按类别探索</h3>
-                    <a id="view-all-categories" href="#" class="text-sky-600 font-semibold hover:underline flex items-center gap-1">
+                    <a id="view-all-categories" href="course-market-zone.html?zone=all" class="text-sky-600 font-semibold hover:underline flex items-center gap-1">
                         <span data-i18n="view_all">查看全部</span>
                         <iconify-icon icon="lucide:chevron-right"></iconify-icon>
                     </a>
                 </div>
                 <div class="grid grid-cols-4 gap-6">
-                    <div class="group p-6 glass-card bg-sky-50 border-sky-100/50 hover:bg-sky-100 transition-all cursor-pointer">
+                    <button type="button" data-go-zone="science" class="group p-6 glass-card bg-sky-50 border-sky-100/50 hover:bg-sky-100 transition-all cursor-pointer text-left">
                         <div class="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
                             <iconify-icon icon="lucide:calculator" class="text-3xl"></iconify-icon>
                         </div>
                         <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_science_title">理科前沿</h4>
                         <p class="text-sm text-slate-500" data-i18n="cat_science_desc">数学、物理、生物</p>
-                    </div>
-                    <div class="group p-6 glass-card bg-pink-50 border-pink-100/50 hover:bg-pink-100 transition-all cursor-pointer">
+                    </button>
+                    <button type="button" data-go-zone="humanities" class="group p-6 glass-card bg-pink-50 border-pink-100/50 hover:bg-pink-100 transition-all cursor-pointer text-left">
                         <div class="w-14 h-14 bg-pink-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
                             <iconify-icon icon="lucide:feather" class="text-3xl"></iconify-icon>
                         </div>
                         <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_humanities_title">文科之美</h4>
                         <p class="text-sm text-slate-500" data-i18n="cat_humanities_desc">文学、历史、哲学</p>
-                    </div>
-                    <div class="group p-6 glass-card bg-emerald-50 border-emerald-100/50 hover:bg-emerald-100 transition-all cursor-pointer">
+                    </button>
+                    <button type="button" data-go-zone="languages" class="group p-6 glass-card bg-emerald-50 border-emerald-100/50 hover:bg-emerald-100 transition-all cursor-pointer text-left">
                         <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
                             <iconify-icon icon="lucide:globe-2" class="text-3xl"></iconify-icon>
                         </div>
                         <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_languages_title">全球语言</h4>
                         <p class="text-sm text-slate-500" data-i18n="cat_languages_desc">英语、日语、西班牙语</p>
-                    </div>
-                    <div class="group p-6 glass-card bg-amber-50 border-amber-100/50 hover:bg-amber-100 transition-all cursor-pointer">
+                    </button>
+                    <button type="button" data-go-zone="cs" class="group p-6 glass-card bg-amber-50 border-amber-100/50 hover:bg-amber-100 transition-all cursor-pointer text-left">
                         <div class="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform">
                             <iconify-icon icon="lucide:cpu" class="text-3xl"></iconify-icon>
                         </div>
                         <h4 class="text-lg font-bold text-slate-800 mb-1" data-i18n="cat_tech_title">信息技术</h4>
                         <p class="text-sm text-slate-500" data-i18n="cat_tech_desc">算法、AI、软件开发</p>
-                    </div>
+                    </button>
                 </div>
             </section>
 
@@ -185,10 +185,10 @@
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-2xl font-bold text-slate-800 font-display" data-i18n="section_trending">热门推荐</h3>
                     <div class="flex gap-2">
-                        <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+                        <button id="trending-prev-btn" class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100">
                             <iconify-icon icon="lucide:chevron-left"></iconify-icon>
                         </button>
-                        <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100">
+                        <button id="trending-next-btn" class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100">
                             <iconify-icon icon="lucide:chevron-right"></iconify-icon>
                         </button>
                     </div>
@@ -199,7 +199,7 @@
                         <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
                             <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="Math course">
                             <div class="absolute top-3 right-3">
-                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                <button id="favorite-calc-btn" class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
                                     <iconify-icon icon="lucide:heart"></iconify-icon>
                                 </button>
                             </div>
@@ -227,7 +227,7 @@
                         <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
                             <img src="https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="English course">
                             <div class="absolute top-3 right-3">
-                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                <button id="favorite-english-btn" class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
                                     <iconify-icon icon="lucide:heart"></iconify-icon>
                                 </button>
                             </div>
@@ -255,7 +255,7 @@
                         <div class="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
                             <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover" alt="Physics course">
                             <div class="absolute top-3 right-3">
-                                <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
+                                <button id="favorite-quantum-btn" class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-pink-500 transition-colors shadow-sm">
                                     <iconify-icon icon="lucide:heart"></iconify-icon>
                                 </button>
                             </div>
@@ -284,14 +284,14 @@
             <section class="mb-16">
                 <h3 class="text-2xl font-bold text-slate-800 font-display mb-8" data-i18n="section_more">更多学科</h3>
                 <div class="flex flex-wrap gap-3">
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_bio">生物科学</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_chem">化学实验</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_history">世界历史</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_econ">宏观经济学</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_politics">政治哲学</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_geo">地理测绘</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_spanish">西班牙语 B1</button>
-                    <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_python">Python 数据挖掘</button>
+                    <button type="button" data-go-zone="bio" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_bio">生物科学</button>
+                    <button type="button" data-go-zone="chemistry" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_chem">化学实验</button>
+                    <button type="button" data-go-zone="history" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_history">世界历史</button>
+                    <button type="button" data-go-zone="economics" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_econ">宏观经济学</button>
+                    <button type="button" data-go-zone="politics" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_politics">政治哲学</button>
+                    <button type="button" data-go-zone="geography" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_geo">地理测绘</button>
+                    <button type="button" data-go-zone="spanish" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_spanish">西班牙语 B1</button>
+                    <button type="button" data-go-zone="python" class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-semibold hover:border-sky-400 hover:text-sky-600 transition-all" data-i18n="chip_python">Python 数据挖掘</button>
                 </div>
             </section>
 
@@ -364,7 +364,7 @@
             <span class="text-[10px] font-bold uppercase tracking-wider" data-i18n="nav_home">首页</span>
         </a>
         <a href="course-workshop.html" class="nav-workshop-active flex flex-col items-center gap-1 text-sky-600 transition-colors">
-            <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+            <img src="./assets/icons/nav-workshop.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
             <span class="text-[10px] font-bold uppercase tracking-wider" data-i18n="nav_workshop">课程工坊</span>
         </a>
         <a href="my-settings.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
@@ -549,15 +549,54 @@
             const lang = getLang();
             applyTranslations(lang);
 
-            const buttons = document.querySelectorAll('[data-open-pack]');
-            if (!buttons.length) return;
-            buttons.forEach((btn) => {
+            const jump = (url) => {
+                window.location.href = url;
+            };
+
+            const directRoutes = {
+                'sidebar-upgrade-btn': 'course-market-plus.html',
+                'cta-plus-btn': 'course-market-plus.html',
+                'filter-btn': 'course-market-filter.html',
+                'cart-btn': 'course-market-cart.html',
+                'trending-prev-btn': 'course-market-highlights.html?view=weekly',
+                'trending-next-btn': 'course-market-highlights.html?view=new',
+                'favorite-calc-btn': 'course-market-favorites.html?course=calc',
+                'favorite-english-btn': 'course-market-favorites.html?course=business-english',
+                'favorite-quantum-btn': 'course-market-favorites.html?course=quantum'
+            };
+
+            Object.entries(directRoutes).forEach(([id, url]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('click', () => jump(url));
+            });
+
+            document.querySelectorAll('[data-go-zone]').forEach((el) => {
+                const zone = (el.dataset.goZone || '').trim();
+                if (!zone) return;
+                el.addEventListener('click', () => {
+                    jump(`course-market-zone.html?zone=${encodeURIComponent(zone)}`);
+                });
+            });
+
+            const packToCourse = {
+                pack_hero: 'french-journey',
+                pack_calc: 'calc-zero-to-one',
+                pack_english: 'business-english',
+                pack_quantum: 'quantum-intro',
+                pack_rank_1: 'linear-algebra-case',
+                pack_rank_2: 'ui-design-system',
+                pack_rank_3: 'modern-world-history'
+            };
+
+            document.querySelectorAll('[data-open-pack]').forEach((btn) => {
                 btn.addEventListener('click', () => {
+                    const key = (btn.dataset.packKey || '').trim();
                     const name = (btn.getAttribute('data-pack-name') || '').trim();
                     const params = new URLSearchParams();
-                    params.set('openPack', '1');
-                    if (name) params.set('packName', name);
-                    window.location.href = `index.html?${params.toString()}`;
+                    params.set('course', packToCourse[key] || 'featured-course');
+                    if (name) params.set('name', name);
+                    jump(`course-market-course.html?${params.toString()}`);
                 });
             });
         })();

@@ -247,7 +247,7 @@
                 <span class="text-[10px] font-bold uppercase tracking-wider">首页</span>
             </a>
             <a href="course-workshop.html" id="nav-workshop" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
-                <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+                <img src="./assets/icons/nav-workshop.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
                 <span class="text-[10px] font-bold uppercase tracking-wider">课程工坊</span>
             </a>
             <a href="#" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition-colors">
@@ -262,6 +262,8 @@
         const btnYearly = document.getElementById('toggle-yearly');
         const priceEl = document.getElementById('pro-price');
         const billingEl = document.getElementById('pro-billing');
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        let currentCycle = 'monthly';
 
         btnMonthly.addEventListener('click', () => {
             btnMonthly.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
@@ -270,6 +272,7 @@
             btnYearly.classList.add('text-slate-500');
             priceEl.textContent = '¥150';
             billingEl.classList.add('opacity-0');
+            currentCycle = 'monthly';
         });
 
         btnYearly.addEventListener('click', () => {
@@ -279,7 +282,23 @@
             btnMonthly.classList.add('text-slate-500');
             priceEl.textContent = '¥125';
             billingEl.classList.remove('opacity-0');
+            currentCycle = 'yearly';
         });
+
+        if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                const amount = (priceEl.textContent || '').replace(/[^\d.]/g, '') || '150';
+                const params = new URLSearchParams({
+                    source: 'subscription-plans',
+                    planName: 'Pro Plan',
+                    amount: amount,
+                    currency: 'CNY',
+                    cycle: currentCycle
+                });
+                window.location.href = `billing-payment-method.html?${params.toString()}`;
+            });
+        }
 
         const toggleComparison = document.getElementById('toggle-comparison');
         const comparisonTable = document.getElementById('comparison-table');

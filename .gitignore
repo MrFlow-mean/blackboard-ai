@@ -1,0 +1,28 @@
+# 环境变量与密钥（切勿提交）
+.env
+*.env
+backend/.env
+.env.local
+.env.*.local
+
+# 依赖
+node_modules/
+
+# 日志与运行时
+logs/
+*.log
+npm-debug.log*
+.pm2/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 可选：构建产物（若以后有）
+dist/
+build/

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>筛选中心 - Linguify</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
+    h1, h2, .display { font-family: 'Outfit', sans-serif; }
+    .chip { border: 1px solid #e2e8f0; background: #fff; }
+    .chip.active { border-color: #0284c7; color: #0284c7; background: #f0f9ff; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <div class="max-w-5xl mx-auto px-6 py-8 pb-24">
+    <header class="flex items-center justify-between mb-8">
+      <div>
+        <p class="text-sm text-sky-700 font-semibold">筛选中心 / Filter Hub</p>
+        <h1 class="text-3xl font-extrabold display">按课程性质精准筛选</h1>
+      </div>
+      <a href="course-workshop.html" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold">返回工坊</a>
+    </header>
+
+    <section class="grid md:grid-cols-2 gap-6 mb-6">
+      <article class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+        <h2 class="font-bold text-lg mb-4">学科分区</h2>
+        <div class="flex flex-wrap gap-2" data-group="zone">
+          <button class="chip active px-4 py-2 rounded-xl" data-zone="all">全部</button>
+          <button class="chip px-4 py-2 rounded-xl" data-zone="languages">语言</button>
+          <button class="chip px-4 py-2 rounded-xl" data-zone="science">科学</button>
+          <button class="chip px-4 py-2 rounded-xl" data-zone="humanities">人文</button>
+          <button class="chip px-4 py-2 rounded-xl" data-zone="cs">计算机</button>
+        </div>
+      </article>
+
+      <article class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+        <h2 class="font-bold text-lg mb-4">学习性质</h2>
+        <div class="flex flex-wrap gap-2" data-group="type">
+          <button class="chip active px-4 py-2 rounded-xl">全部性质</button>
+          <button class="chip px-4 py-2 rounded-xl">入门速通</button>
+          <button class="chip px-4 py-2 rounded-xl">考试提升</button>
+          <button class="chip px-4 py-2 rounded-xl">项目实战</button>
+          <button class="chip px-4 py-2 rounded-xl">职业成长</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-6 mb-8">
+      <article class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+        <h2 class="font-bold text-lg mb-4">难度等级</h2>
+        <div class="flex gap-2" data-group="level">
+          <button class="chip active px-4 py-2 rounded-xl">全部</button>
+          <button class="chip px-4 py-2 rounded-xl">L1</button>
+          <button class="chip px-4 py-2 rounded-xl">L2</button>
+          <button class="chip px-4 py-2 rounded-xl">L3</button>
+        </div>
+      </article>
+
+      <article class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+        <h2 class="font-bold text-lg mb-4">课程形式</h2>
+        <div class="flex flex-wrap gap-2" data-group="mode">
+          <button class="chip active px-4 py-2 rounded-xl">不限</button>
+          <button class="chip px-4 py-2 rounded-xl">录播</button>
+          <button class="chip px-4 py-2 rounded-xl">直播</button>
+          <button class="chip px-4 py-2 rounded-xl">直播+录播</button>
+        </div>
+      </article>
+    </section>
+
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-wrap gap-3 items-center justify-between">
+      <p class="text-sm text-slate-500">提示：你可以先选学科，再选课程性质，最后按难度锁定候选课程。</p>
+      <div class="flex gap-2">
+        <a id="go-zone-btn" href="course-market-zone.html?zone=all" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold">查看筛选结果</a>
+        <a href="course-market-discover.html" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">回发现页</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const groups = document.querySelectorAll('[data-group]');
+      let selectedZone = 'all';
+
+      groups.forEach(group => {
+        group.querySelectorAll('.chip').forEach(btn => {
+          btn.addEventListener('click', () => {
+            group.querySelectorAll('.chip').forEach(item => item.classList.remove('active'));
+            btn.classList.add('active');
+            if (btn.dataset.zone) {
+              selectedZone = btn.dataset.zone;
+              document.getElementById('go-zone-btn').setAttribute('href', `course-market-zone.html?zone=${encodeURIComponent(selectedZone)}`);
+            }
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

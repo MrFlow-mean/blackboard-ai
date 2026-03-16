@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Linguify - 绑定支付方式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://api.fontshare.com/v2/css?f[]=outfit@400,600,700&f[]=plus-jakarta-sans@400,500,600,700&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(180deg, #f0f9ff 0%, #f8fafc 35%, #f8fafc 100%);
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 10px 28px -14px rgba(14, 165, 233, 0.38);
+    }
+
+    input, select {
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+    }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen pb-10">
+    <header class="pt-12 pb-4 px-5 sticky top-0 bg-white/80 backdrop-blur-md border-b border-sky-100/80 z-20">
+      <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <a href="billing.html" onclick="if (history.length > 1) { history.back(); return false; }" class="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-700 active:scale-95 transition-transform">
+          <iconify-icon icon="lucide:chevron-left" class="text-xl"></iconify-icon>
+        </a>
+        <h1 class="font-display text-lg font-bold text-slate-800">绑定支付方式</h1>
+        <div class="w-10"></div>
+      </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-5 pt-6 space-y-5">
+      <section class="glass-card rounded-3xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-base font-bold text-slate-900">账单信息</h2>
+          <span class="text-[11px] font-semibold text-sky-700 bg-sky-100 px-2.5 py-1 rounded-full">待绑定</span>
+        </div>
+        <div class="space-y-3 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">套餐</span>
+            <span id="bill-plan" class="font-semibold text-slate-800">Plus 专业版</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">周期</span>
+            <span id="bill-cycle" class="font-semibold text-slate-800">月付</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">应付金额</span>
+            <span id="bill-amount" class="font-display font-bold text-lg text-slate-900">¥150.00</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass-card rounded-3xl p-5">
+        <h2 class="font-display text-base font-bold text-slate-900 mb-4">支付方式</h2>
+        <form id="bind-payment-form" class="space-y-4">
+          <div>
+            <label for="card-holder" class="text-sm font-semibold text-slate-700 block mb-2">持卡人姓名</label>
+            <input id="card-holder" required type="text" placeholder="请输入持卡人姓名" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+          </div>
+
+          <div>
+            <label for="card-number" class="text-sm font-semibold text-slate-700 block mb-2">银行卡号</label>
+            <input id="card-number" required type="text" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 3456" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="expiry" class="text-sm font-semibold text-slate-700 block mb-2">有效期</label>
+              <input id="expiry" required type="text" maxlength="5" placeholder="MM/YY" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+            </div>
+            <div>
+              <label for="cvc" class="text-sm font-semibold text-slate-700 block mb-2">安全码</label>
+              <input id="cvc" required type="password" inputmode="numeric" maxlength="4" placeholder="CVC" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+            </div>
+          </div>
+
+          <hr class="border-slate-200" />
+
+          <h3 class="text-sm font-bold text-slate-800">账单地址信息</h3>
+          <div>
+            <label for="billing-email" class="text-sm font-semibold text-slate-700 block mb-2">账单邮箱</label>
+            <input id="billing-email" required type="email" placeholder="you@example.com" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+          </div>
+          <div>
+            <label for="billing-country" class="text-sm font-semibold text-slate-700 block mb-2">国家/地区</label>
+            <select id="billing-country" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white">
+              <option value="CN" selected>中国</option>
+              <option value="US">美国</option>
+              <option value="JP">日本</option>
+              <option value="EU">欧盟</option>
+            </select>
+          </div>
+          <div>
+            <label for="billing-address" class="text-sm font-semibold text-slate-700 block mb-2">账单地址</label>
+            <input id="billing-address" required type="text" placeholder="请输入详细地址" class="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white" />
+          </div>
+
+          <button type="submit" class="w-full h-12 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold active:scale-[0.99] transition-transform shadow-md shadow-sky-200 mt-1">
+            确认绑定并支付
+          </button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    const planName = params.get('planName') || 'Plus 专业版';
+    const amount = params.get('amount') || '150.00';
+    const cycle = params.get('cycle') || 'monthly';
+    const currency = params.get('currency') || 'CNY';
+
+    const cycleMap = {
+      monthly: '月付',
+      yearly: '年付'
+    };
+
+    const currencySymbolMap = {
+      CNY: '¥',
+      USD: '$'
+    };
+
+    document.getElementById('bill-plan').textContent = planName;
+    document.getElementById('bill-cycle').textContent = cycleMap[cycle] || cycle;
+    document.getElementById('bill-amount').textContent = `${currencySymbolMap[currency] || ''}${amount}`;
+
+    const cardNumberInput = document.getElementById('card-number');
+    cardNumberInput.addEventListener('input', function () {
+      const digits = this.value.replace(/\D/g, '').slice(0, 19);
+      this.value = digits.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    const expiryInput = document.getElementById('expiry');
+    expiryInput.addEventListener('input', function () {
+      const digits = this.value.replace(/\D/g, '').slice(0, 4);
+      if (digits.length >= 3) {
+        this.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      } else {
+        this.value = digits;
+      }
+    });
+
+    document.getElementById('bind-payment-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      alert('支付方式已绑定，账单信息已保存。');
+      window.location.href = 'billing.html';
+    });
+  </script>
+</body>
+</html>

@@ -263,6 +263,16 @@
       overflow-wrap: anywhere;
     }
 
+    .chat-drop-zone {
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+      border-radius: 16px;
+    }
+
+    .chat-drop-zone.is-dragover {
+      background: rgba(14, 165, 233, 0.08);
+      box-shadow: inset 0 0 0 2px rgba(14, 165, 233, 0.45);
+    }
+
     .dark-blackboard { background-color: rgb(4, 13, 26); color: rgb(226, 232, 240); height: 100%; }
 
     .light-panel {
@@ -337,7 +347,7 @@
       height: 44px;
       border-radius: 14px;
       border: none;
-      background: url("file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-ff729e63-4f92-4201-b168-ad0189bb28b7-17409cf0-6dfa-400d-a9c6-a6b307ea78e3.png") center/cover no-repeat;
+      background: url("./assets/bg/ai-voice-call.png") center/cover no-repeat;
       box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
       display: inline-flex;
       align-items: center;
@@ -425,7 +435,7 @@
     }
 
     #main-wrapper.is-split .dark-blackboard {
-      padding: 2.5rem;
+      padding: 1.5rem 1.75rem 1.75rem;
       border-radius: 2rem;
     }
 
@@ -550,11 +560,11 @@
         
         <!-- Left Part: Blackboard -->
         <section id="blackboard" class="blackboard-card flex-shrink-0">
-          <div class="dark-blackboard rounded-[2.5rem] p-12 h-full relative overflow-hidden shadow-2xl flex flex-col">
+          <div class="dark-blackboard rounded-[2.5rem] p-8 lg:p-10 h-full relative overflow-hidden shadow-2xl flex flex-col">
             <div class="relative z-10 flex-1 min-h-0 overflow-y-auto pr-2">
-              <div class="mb-8 flex items-start justify-between gap-4">
+              <div class="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <h4 class="text-emerald-400 text-xs font-bold uppercase tracking-[0.25em] mb-4" data-i18n="board_title">讲述内容</h4>
+                  <h4 class="text-emerald-400 text-xs font-bold uppercase tracking-[0.25em] mb-2" data-i18n="board_title">讲述内容</h4>
                   <h2 id="blackboard-title" class="text-4xl font-bold leading-tight max-w-2xl" data-i18n="board_desc">你好同学！今天想学些什么呢？</h2>
                 </div>
                 <button class="drag-handle" data-drag-handle aria-label="拖拽布局" data-i18n-aria="drag_handle">
@@ -562,16 +572,16 @@
                 </button>
               </div>
               
-              <div class="space-y-8">
+              <div class="space-y-4">
                 <!-- 纯板书原文模式：隐藏目录/分类（仍保留DOM以兼容现有逻辑） -->
                 <div id="blackboard-tags" class="hidden flex flex-wrap gap-5"></div>
                 <div id="blackboard-outline" class="hidden space-y-2"></div>
 
                 <!-- Current Node Content -->
-                <div id="blackboard-node-panel" class="mt-10">
-                  <div class="flex items-center justify-between gap-3 mb-3">
+                <div id="blackboard-node-panel" class="mt-2">
+                  <div class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-900/35 px-3 py-2.5">
                     <div class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">板书正文</div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       <button id="bb-edit-btn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-bold press hover:bg-slate-900/55">
                         编辑
                       </button>
@@ -586,7 +596,7 @@
                       </button>
                     </div>
                   </div>
-                  <div id="bb-format-toolbar" class="hidden mb-3 flex flex-wrap items-center gap-2">
+                  <div id="bb-format-toolbar" class="hidden mt-2 mb-3 flex flex-wrap items-center gap-2 border-t border-slate-700/50 pt-2">
                     <button type="button" data-bb-cmd="bold" class="px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-extrabold press hover:bg-slate-900/55">B</button>
                     <button type="button" data-bb-cmd="italic" class="px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-extrabold press hover:bg-slate-900/55">I</button>
                     <button type="button" data-bb-cmd="underline" class="px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-extrabold press hover:bg-slate-900/55">U</button>
@@ -603,13 +613,6 @@
                   </div>
                   <div id="blackboard-node-heading" class="text-xl font-bold text-slate-100"></div>
                   <div id="blackboard-node-content" class="mt-4 text-slate-200 text-sm leading-relaxed whitespace-pre-wrap"></div>
-                  <div class="mt-4 flex items-center justify-between gap-3">
-                    <div class="text-xs font-semibold text-slate-400">示例/对话/练习</div>
-                    <button id="bb-add-example-btn" type="button" class="hidden px-3 py-1.5 rounded-xl bg-slate-900/40 border border-slate-700/40 text-slate-200 text-xs font-bold press hover:bg-slate-900/55">
-                      + 添加
-                    </button>
-                  </div>
-                  <div id="blackboard-node-examples" class="mt-3 space-y-3"></div>
                 </div>
               </div>
             </div>
@@ -635,7 +638,7 @@
             <div class="ripple r2"></div>
             
             <!-- Chat UI (Visible in split) -->
-            <div class="voice-messages-container absolute inset-0 z-20 flex flex-col">
+            <div class="voice-messages-container absolute inset-0 z-20 flex flex-col relative">
               <div class="flex items-center justify-between p-6 border-b border-slate-100">
                 <div class="flex flex-col">
                   <h3 class="text-xl font-bold text-slate-800" data-i18n="chat_title">实时对话</h3>
@@ -670,7 +673,7 @@
                 </div>
               </div>
 
-              <div class="p-6 space-y-4">
+              <div id="chat-drop-zone" class="p-6 space-y-4 chat-drop-zone">
                 <div class="relative flex items-end gap-2">
                   <!-- Plus Button & Menu -->
                   <div class="relative shrink-0 pb-1">
@@ -753,30 +756,6 @@
   </div>
 
   <!-- Floating selection toolbar (Board / Sources) -->
-  <!-- Confirm generate board modal -->
-  <div id="confirm-generate-modal" class="hidden fixed inset-0 z-[75]">
-    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
-    <div class="relative h-full w-full flex items-center justify-center p-6">
-      <div class="w-full max-w-lg rounded-[2rem] bg-white border border-slate-200 shadow-2xl p-6">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <div class="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">课堂开课确认</div>
-            <h3 class="mt-2 text-xl font-extrabold text-slate-900">需求已经足够清晰，是否生成版书并开始上课？</h3>
-            <p id="confirm-generate-desc" class="mt-2 text-sm text-slate-600 whitespace-pre-wrap"></p>
-          </div>
-          <button id="confirm-generate-close" type="button" class="h-10 w-10 rounded-full bg-slate-100 text-slate-600 press hover:bg-slate-200">✕</button>
-        </div>
-        <div class="mt-6 flex gap-3">
-          <button id="confirm-generate-yes" type="button" class="flex-1 py-3 rounded-2xl bg-sky-600 text-white font-bold press hover:bg-sky-700">是，生成并开始上课</button>
-          <button id="confirm-generate-no" type="button" class="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold press hover:bg-slate-50">否，我还想补充</button>
-        </div>
-        <div class="mt-4 text-[12px] text-slate-500">
-          为了更高效，讲师默认只引用与当前目标相关的材料片段；如需更多内容，可在材料区框选并点击“增加讲师注意力篇幅”。
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div id="selection-toolbar" class="selection-toolbar hidden" role="dialog" aria-label="选中文本操作">
     <button id="selection-add-attention-btn" type="button" class="primary press">增加讲师注意力篇幅</button>
     <button id="selection-save-note-btn" type="button" class="press">收藏到笔记本</button>
@@ -875,8 +854,23 @@
       return clean.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
     }
 
-    const DEFAULT_API_BASE = 'http://127.0.0.1:3002';
-    const DEFAULT_WS_URL = 'ws://127.0.0.1:3002';
+    // 生产环境（非本地）默认使用同源 /api，便于阿里云等单机 Nginx 反向代理
+    function getDefaultApiBase() {
+      if (typeof window === 'undefined' || !window.location) return 'http://127.0.0.1:3002';
+      const host = window.location.hostname || '';
+      if (/^localhost$|^127\.0\.0\.1$/i.test(host)) return 'http://127.0.0.1:3002';
+      return window.location.origin + '/api';
+    }
+    function getDefaultWsUrl() {
+      if (typeof window === 'undefined' || !window.location) return 'ws://127.0.0.1:3002';
+      const host = window.location.hostname || '';
+      if (/^localhost$|^127\.0\.0\.1$/i.test(host)) return 'ws://127.0.0.1:3002';
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return proto + '//' + window.location.host + '/api';
+    }
+
+    const DEFAULT_API_BASE = getDefaultApiBase();
+    const DEFAULT_WS_URL = getDefaultWsUrl();
 
     let BOARD_API_BASE = normalizeBaseUrl(localStorage.getItem('blackboard-api-base')) || DEFAULT_API_BASE;
     let BOARD_WS_URL = normalizeBaseUrl(localStorage.getItem('blackboard-ws-url')) || toWsUrl(BOARD_API_BASE) || DEFAULT_WS_URL;
@@ -947,6 +941,7 @@
     const NOTEBOOK_STORAGE_KEY = 'linguify-notebook';
     const MATERIALS_STORAGE_KEY = 'linguify-materials';
     const NOTEBOOK_MAX_ITEMS = 300;
+    const DEFAULT_INITIAL_SOLVE_COUNT = 2;
 
     const boardState = {
       board: null,
@@ -963,6 +958,8 @@
 
     const sessionRuntime = {
       recordId: `record-${Date.now()}`,
+      /** 从历史课程打开时的原 session id，保存时用此 id 覆盖原记录，避免产生重复课程 */
+      replaySessionId: null,
       startedAt: new Date().toISOString(),
       messages: [],
       boardChanges: [],
@@ -1393,7 +1390,11 @@
       headingEl.textContent = `${outlineNode.id}. ${outlineNode.title || ''}`.trim();
       if (!isEditing) {
         const content = (nodeData?.content || '').toString().trim();
-        renderBoardContentInto(contentEl, content, true);
+        const examples = Array.isArray(nodeData?.examples)
+          ? nodeData.examples.map((x) => (x || '').toString().trim()).filter(Boolean)
+          : [];
+        const mergedForDisplay = [content, ...examples].filter(Boolean).join('\n\n');
+        renderBoardContentInto(contentEl, mergedForDisplay, true);
       }
 
       examplesEl.innerHTML = '';
@@ -1447,11 +1448,57 @@
       updateSaveSelectionButtonState();
     }
 
+    // Override: examples panel removed from UI, render only heading + main content.
+    function renderCurrentNodeContent() {
+      const headingEl = document.getElementById('blackboard-node-heading');
+      const contentEl = document.getElementById('blackboard-node-content');
+      if (!headingEl || !contentEl) return;
+
+      const board = boardState.board;
+      const outline = Array.isArray(board?.outline) ? board.outline : [];
+      const nodes = board?.nodes && typeof board.nodes === 'object' ? board.nodes : {};
+      const nodeId = board?.progress?.current_node_id || outline[0]?.id || '';
+      const outlineNode = outline.find(n => n.id === nodeId) || outline[0] || null;
+      const nodeData = nodeId && nodes[nodeId] && typeof nodes[nodeId] === 'object' ? nodes[nodeId] : {};
+      const isEditing = boardEditor.editing && boardEditor.nodeId === nodeId;
+
+      if (!outlineNode) {
+        headingEl.textContent = voiceLang === 'en' ? 'Blackboard content' : '板书内容';
+        contentEl.textContent = voiceLang === 'en'
+          ? 'No blackboard yet. Start the realtime chat to clarify your topic and level, then generate a board.'
+          : '尚未生成板书。你可以先开启实时语音聊天，澄清“学什么 + 当前水平”，再点击 ✅ 生成。';
+        contentEl.removeAttribute('contenteditable');
+        contentEl.classList.remove('outline', 'outline-2', 'outline-sky-400/40', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+        updateBoardEditorControls();
+        return;
+      }
+
+      headingEl.textContent = `${outlineNode.id}. ${outlineNode.title || ''}`.trim();
+      if (!isEditing) {
+        const content = (nodeData?.content || '').toString().trim();
+        const examples = Array.isArray(nodeData?.examples)
+          ? nodeData.examples.map((x) => (x || '').toString().trim()).filter(Boolean)
+          : [];
+        const mergedForDisplay = [content, ...examples].filter(Boolean).join('\n\n');
+        renderBoardContentInto(contentEl, mergedForDisplay, true);
+      }
+
+      if (isEditing) {
+        contentEl.setAttribute('contenteditable', 'true');
+        contentEl.classList.add('outline', 'outline-2', 'outline-sky-400/0', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+      } else {
+        contentEl.removeAttribute('contenteditable');
+        contentEl.classList.remove('outline', 'outline-2', 'outline-sky-400/0', 'bg-slate-900/30', 'rounded-xl', 'p-4');
+      }
+
+      updateBoardEditorControls();
+      updateSaveSelectionButtonState();
+    }
+
     function updateBoardEditorControls() {
       const editBtn = document.getElementById('bb-edit-btn');
       const saveBtn = document.getElementById('bb-save-btn');
       const cancelBtn = document.getElementById('bb-cancel-btn');
-      const addExampleBtn = document.getElementById('bb-add-example-btn');
       const formatToolbar = document.getElementById('bb-format-toolbar');
 
       const canEdit = !!boardState.board && !!(boardState.board?.board_id);
@@ -1468,7 +1515,6 @@
       if (saveBtn) saveBtn.classList.toggle('hidden', !showSaveCancel);
       if (cancelBtn) cancelBtn.classList.toggle('hidden', !showSaveCancel);
       if (editBtn) editBtn.classList.toggle('hidden', !showEdit);
-      if (addExampleBtn) addExampleBtn.classList.toggle('hidden', !showSaveCancel);
       if (formatToolbar) formatToolbar.classList.toggle('hidden', !showSaveCancel);
 
       if (saveBtn) {
@@ -1480,11 +1526,6 @@
         cancelBtn.disabled = boardEditor.saving;
         cancelBtn.classList.toggle('opacity-60', cancelBtn.disabled);
         cancelBtn.classList.toggle('cursor-not-allowed', cancelBtn.disabled);
-      }
-      if (addExampleBtn) {
-        addExampleBtn.disabled = boardEditor.saving;
-        addExampleBtn.classList.toggle('opacity-60', addExampleBtn.disabled);
-        addExampleBtn.classList.toggle('cursor-not-allowed', addExampleBtn.disabled);
       }
     }
 
@@ -2147,30 +2188,28 @@
           pushSessionMessage('system', voiceLang === 'en' ? 'Okay. We will keep clarifying.' : '好的，我们继续澄清。你可以继续补充你的学习目标与当前水平。');
         } else if (type === 'update_board') {
           pushSessionMessage('system', voiceLang === 'en' ? 'Okay. Board update canceled.' : '已取消更新板书。');
+        } else if (type === 'confirm_generate') {
+          confirmGenerateState.open = false;
+          clarifyState.proposalPending = false;
+          pushSessionMessage('system', voiceLang === 'en'
+            ? 'OK. You can continue adding details before generating the blackboard.'
+            : '好的，你可以继续补充细节；准备好后再生成板书。');
         }
         return;
       }
 
+      if (type === 'confirm_generate') {
+        confirmGenerateState.open = false;
+        const goalText = (card.goalText || '').toString().trim() || buildGoalTextFromClarify();
+        await runCreateBoardFlow(goalText);
+        return;
+      }
+
       if (type === 'create_board') {
-        if (boardState.creatingBoard) return;
-        boardState.creatingBoard = true;
         clarifyState.proposalPending = false;
         clarifyState.lastProposalSignature = (card.signature || '').toString() || `${clarifyState.topic}||${clarifyState.level}`;
         const goalText = (card.goalText || '').toString().trim() || buildGoalTextFromClarify();
-        try {
-          pushSessionMessage('system', voiceLang === 'en' ? 'Generating blackboard...' : '正在生成板书...');
-          const board = await createBoardFromGoal(goalText);
-          renderBoard(board);
-          await bindBoardContextToVoice();
-          // 生成板书后，讲师进入教学阶段，开始围绕黑板讲解
-          const kickoffPrompt = buildTeachingKickoffPrompt(goalText, board);
-          await sendTextByPreferredTransport(kickoffPrompt);
-        } catch (e) {
-          console.error('生成板书失败:', e);
-          window.alert(e?.message || voiceT('board_create_fail'));
-        } finally {
-          boardState.creatingBoard = false;
-        }
+        await runCreateBoardFlow(goalText);
         return;
       }
 
@@ -2484,17 +2523,26 @@
               const extracted = (result.extracted_text || '').toString().trim();
               const summary = (result.summary || '').toString().trim();
               const points = Array.isArray(result.key_points) ? result.key_points.filter(Boolean) : [];
-              const block = [
-                `【图片识别】${name || (voiceLang === 'en' ? 'Image' : '图片')}`,
-                extracted ? `---\n${extracted}` : (voiceLang === 'en' ? '(No text detected)' : '（未识别到明显文字）'),
-                summary ? `---\n摘要：${summary}` : '',
-                points.length ? `要点：\n${points.slice(0, 8).map(p => `- ${p}`).join('\n')}` : ''
-              ].filter(Boolean).join('\n');
-              const merged = [getMaterialsTextFromDom().trim(), block].filter(Boolean).join('\n\n');
-              setMaterialsTextToDom(merged);
-              saveMaterialsText(merged);
+              const list = Array.isArray(sessionRuntime.attachments) ? sessionRuntime.attachments : [];
+              list.unshift({
+                id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                type: 'image',
+                scope: 'board_only',
+                title: name || (voiceLang === 'en' ? 'Image' : '图片'),
+                filename: name,
+                extracted_text: extracted,
+                summary,
+                key_points: points.slice(0, 12),
+                created_at: new Date().toISOString()
+              });
+              sessionRuntime.attachments = list.slice(0, 20);
               updateClarityUI();
-              pushSessionMessage('system', voiceLang === 'en' ? 'Image text added to materials.' : '已将图片识别结果加入材料区。');
+              const started = await maybeAutoStartTaskFromUploadedImage(name || extracted || summary || '');
+              if (!started) {
+                pushSessionMessage('system', voiceLang === 'en'
+                  ? 'Image has been saved as board-generation reference only.'
+                  : '图片已作为“仅板书生成参考”保存。');
+              }
               fileInput.value = '';
               return;
             }
@@ -2536,9 +2584,6 @@
 
     function buildSessionSnapshot(reason = 'manual') {
       const board = boardState.board;
-      if (!board) return null;
-      const outline = Array.isArray(board.outline) ? board.outline : [];
-      const activeNode = outline.find(node => node.id === board?.progress?.current_node_id);
       const endedAt = new Date().toISOString();
       const dialogue = sessionRuntime.messages.slice(-6).map(msg => {
         const prefix = msg.role === 'assistant'
@@ -2548,18 +2593,47 @@
             : (voiceLang === 'en' ? 'System' : '系统'));
         return `${prefix}: ${msg.text}`;
       });
-      const title = formatBoardTitle(board.goal, voiceLang === 'en' ? 56 : 22) || board.goal || voiceT('board_desc');
-      const nodeCountText = voiceLang === 'en' ? `Nodes ${outline.length}` : `节点数 ${outline.length}`;
-      const summary = `${voiceT('board_status_teaching')}: ${activeNode?.title || '-'} · ${nodeCountText}`;
-      const tags = outline.slice(0, 4).map(node => `${node.id}. ${node.title}`);
       const durationSeconds = Math.max(1, Math.round((new Date(endedAt).getTime() - new Date(sessionRuntime.startedAt).getTime()) / 1000));
+      const snapshotId = sessionRuntime.replaySessionId || sessionRuntime.recordId;
+
+      if (board) {
+        const outline = Array.isArray(board.outline) ? board.outline : [];
+        const activeNode = outline.find(node => node.id === board?.progress?.current_node_id);
+        const title = formatBoardTitle(board.goal, voiceLang === 'en' ? 56 : 22) || board.goal || voiceT('board_desc');
+        const nodeCountText = voiceLang === 'en' ? `Nodes ${outline.length}` : `节点数 ${outline.length}`;
+        const summary = `${voiceT('board_status_teaching')}: ${activeNode?.title || '-'} · ${nodeCountText}`;
+        const tags = outline.slice(0, 4).map(node => `${node.id}. ${node.title}`);
+        return {
+          id: snapshotId,
+          title,
+          summary,
+          tags,
+          dialogue,
+          board,
+          messages: sessionRuntime.messages,
+          board_changes: sessionRuntime.boardChanges,
+          started_at: sessionRuntime.startedAt,
+          ended_at: endedAt,
+          duration_seconds: durationSeconds,
+          reason
+        };
+      }
+
+      // 无板书时也保存纯对话记录，便于主页左侧显示
+      const msgCount = Array.isArray(sessionRuntime.messages) ? sessionRuntime.messages.length : 0;
+      if (msgCount === 0) return null;
+      const firstUserText = (sessionRuntime.messages.find(m => m && m.role === 'user') || {}).text;
+      const goalText = (sessionRuntime.pm && sessionRuntime.pm.goal_text) ? sessionRuntime.pm.goal_text.trim() : '';
+      const rawTitle = goalText || (typeof firstUserText === 'string' ? firstUserText.trim() : '') || (voiceLang === 'en' ? 'Conversation' : '对话记录');
+      const title = formatBoardTitle(rawTitle, voiceLang === 'en' ? 56 : 22) || rawTitle.slice(0, (voiceLang === 'en' ? 56 : 22));
+      const summary = voiceLang === 'en' ? `Saved conversation · ${msgCount} messages` : `已保存对话 · ${msgCount} 条消息`;
       return {
-        id: sessionRuntime.recordId,
+        id: snapshotId,
         title,
         summary,
-        tags,
+        tags: [],
         dialogue,
-        board,
+        board: null,
         messages: sessionRuntime.messages,
         board_changes: sessionRuntime.boardChanges,
         started_at: sessionRuntime.startedAt,
@@ -2571,9 +2645,12 @@
 
     function persistSessionToRecords(reason = 'manual') {
       if (sessionRuntime.saved) return null;
-      if (!boardState.board) return null;
-      const hasOutline = Array.isArray(boardState.board?.outline) && boardState.board.outline.length > 0;
-      if (!sessionRuntime.hasActivity && !hasOutline) return null;
+      const hasBoard = !!boardState.board;
+      const hasOutline = hasBoard && Array.isArray(boardState.board?.outline) && boardState.board.outline.length > 0;
+      const hasMessages = Array.isArray(sessionRuntime.messages) && sessionRuntime.messages.length > 0;
+      // 有板书时可保存；无板书时只要有对话活动也保存，以便主页左侧显示上次对话
+      if (!hasBoard && !hasMessages) return null;
+      if (!sessionRuntime.hasActivity && !hasOutline && !hasMessages) return null;
       if (!sessionRuntime.hasActivity && sessionRuntime.replayLoaded) return null;
 
       const snapshot = buildSessionSnapshot(reason);
@@ -2588,7 +2665,8 @@
           desc: snapshot.summary,
           icon: 'lucide:history',
           color: 'text-cyan-500',
-          pinned: false
+          pinned: false,
+          createdAt: snapshot.ended_at || snapshot.started_at || new Date().toISOString()
         });
         saveJsonStorage(LESSONS_KEY, lessons);
       }
@@ -2601,15 +2679,83 @@
       return snapshot;
     }
 
+    function detectTargetLanguageFromText(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return null;
+      const defs = [
+        { code: 'fr', zh: '法语', en: 'French', re: /法语|法文|french|fran[cç]ais|francais/i },
+        { code: 'en', zh: '英语', en: 'English', re: /英语|英文|english/i },
+        { code: 'ja', zh: '日语', en: 'Japanese', re: /日语|日文|japanese|nihongo/i },
+        { code: 'es', zh: '西班牙语', en: 'Spanish', re: /西班牙语|spanish|español|espanol/i },
+        { code: 'de', zh: '德语', en: 'German', re: /德语|德文|german|deutsch/i },
+        { code: 'ko', zh: '韩语', en: 'Korean', re: /韩语|韩文|korean/i },
+        { code: 'zh', zh: '中文', en: 'Chinese', re: /中文|汉语|chinese/i },
+        { code: 'ru', zh: '俄语', en: 'Russian', re: /俄语|俄文|russian/i },
+        { code: 'it', zh: '意大利语', en: 'Italian', re: /意大利语|italian/i },
+        { code: 'pt', zh: '葡萄牙语', en: 'Portuguese', re: /葡萄牙语|portuguese/i },
+        { code: 'ar', zh: '阿拉伯语', en: 'Arabic', re: /阿拉伯语|arabic/i }
+      ];
+      for (const item of defs) {
+        if (item.re.test(raw)) return item;
+      }
+      return null;
+    }
+
+    function resolveTargetLanguageForBoard(goalText) {
+      const pool = [
+        (goalText || '').toString(),
+        (sessionRuntime?.pm?.goal_text || '').toString(),
+        (sessionRuntime?.pm?.learning_spec?.topic || '').toString(),
+        (sessionRuntime?.pm?.learning_spec?.goal || '').toString(),
+        Array.isArray(clarifyState?.notes) ? clarifyState.notes.slice(-8).join('\n') : ''
+      ].join('\n');
+      return detectTargetLanguageFromText(pool);
+    }
+
+    function isLanguageTaskRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+
+      const hasLanguage = /(法语|法文|french|fran[cç]ais|francais|英语|英文|english|日语|日文|japanese|韩语|韩文|korean|德语|德文|german|西班牙语|spanish|俄语|俄文|russian|意大利语|italian|葡萄牙语|portuguese|阿拉伯语|arabic|中文|汉语|chinese)/i.test(raw);
+      const hasLessonTarget = /(情景对话|场景对话|对话|会话|课文|阅读|口语|听力|语法|词汇|发音|翻译|例句|作文|完整对话|lesson\s*text|dialogue|conversation|grammar|vocabulary|speaking|listening|reading|translation|role\s*-?\s*play)/i.test(raw);
+      const hasAction = /(我要|我想|需要|请|帮我|给我|直接|开始|来一段|写一段|生成|重写|重生成|重新生成|改成|不要再问|别问|start|generate|create|write|rewrite|regenerate|explain)/i.test(raw);
+
+      if (hasLanguage && hasLessonTarget && hasAction) return true;
+      if (hasLanguage && hasLessonTarget && raw.length <= 120) return true;
+      return false;
+    }
+
+    function isForceStartRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /(直接开始|直接讲|开始吧|立刻开始|马上开始|不要追问|不用追问|别追问|别问了|不重要.*(直接|开始)|skip\s*(the)?\s*questions?|no\s+more\s+questions?)/i.test(raw);
+    }
+
     async function createBoardFromGoal(goalText) {
+      const targetLang = resolveTargetLanguageForBoard(goalText);
+      const goalWithLanguageLock = targetLang
+        ? [
+          (goalText || '').toString().trim(),
+          voiceLang === 'en'
+            ? `Target language lock: ${targetLang.en}. Any lesson text/dialogue content MUST be in ${targetLang.en}, not in English substitutes unless target language is English.`
+            : `目标语言锁定：${targetLang.zh}。任何“课文/情景对话原文”必须使用${targetLang.zh}输出，除非目标语言本身是英语。`
+        ].filter(Boolean).join('\n')
+        : goalText;
+
       const materialsText = getMaterialsTextFromDom().trim();
       const sources = [];
+      const boardOnlySources = [];
       if (materialsText) {
         sources.push({ source_id: 'materials', title: voiceLang === 'en' ? 'Materials' : '材料', text: materialsText });
       }
-      // add structured attachments as separate sources (image OCR / file content / web search)
+      // add structured attachments as separate sources:
+      // - board_only image attachments: only for board generation, never PM/teacher direct context
+      // - normal attachments: can be used as regular materials
       const atts = Array.isArray(sessionRuntime.attachments) ? sessionRuntime.attachments : [];
-      atts.slice(0, 8).forEach((att, idx) => {
+      atts
+        .filter((att) => (att?.scope || '').toString() !== 'board_only')
+        .slice(0, 8)
+        .forEach((att, idx) => {
         const title = (att?.title || att?.filename || att?.name || `附件${idx + 1}`).toString().trim();
         const extracted = (att?.extracted_text || '').toString().trim();
         const summary = (att?.summary || '').toString().trim();
@@ -2627,15 +2773,71 @@
           text
         });
       });
+      atts
+        .filter((att) => (att?.scope || '').toString() === 'board_only')
+        .slice(0, 8)
+        .forEach((att, idx) => {
+          const title = (att?.title || att?.filename || att?.name || `图片附件${idx + 1}`).toString().trim();
+          const extracted = (att?.extracted_text || '').toString().trim();
+          const summary = (att?.summary || '').toString().trim();
+          const points = Array.isArray(att?.key_points) ? att.key_points.filter(Boolean).slice(0, 8) : [];
+          const text = [
+            title ? `标题：${title}` : '',
+            summary ? `摘要：${summary}` : '',
+            points.length ? `要点：\n${points.map(p => `- ${p}`).join('\n')}` : '',
+            extracted ? `提取文本：\n${extracted}` : ''
+          ].filter(Boolean).join('\n');
+          if (!text.trim()) return;
+          boardOnlySources.push({
+            source_id: `board_only_${att.id || idx + 1}`,
+            title: title || (voiceLang === 'en' ? 'Image Reference' : '图片参考'),
+            text
+          });
+        });
+
+      let learningSpecPayload = sessionRuntime?.pm?.learning_spec && typeof sessionRuntime.pm.learning_spec === 'object'
+        ? { ...sessionRuntime.pm.learning_spec }
+        : null;
+      if (targetLang) {
+        const safeSpec = learningSpecPayload ? { ...learningSpecPayload } : {};
+        const constraints = Array.isArray(safeSpec.constraints) ? safeSpec.constraints.slice(0, 10) : [];
+        const langConstraint = voiceLang === 'en'
+          ? `Dialogue/lesson text must be in ${targetLang.en}.`
+          : `对话/课文原文必须使用${targetLang.zh}。`;
+        if (!constraints.some(x => (x || '').toString().includes(targetLang.zh) || (x || '').toString().toLowerCase().includes(targetLang.en.toLowerCase()))) {
+          constraints.push(langConstraint);
+        }
+        safeSpec.constraints = constraints.slice(0, 10);
+        safeSpec.target_language = targetLang.code;
+        safeSpec.target_language_name = targetLang.zh;
+        if (!safeSpec.topic) {
+          safeSpec.topic = voiceLang === 'en'
+            ? `${targetLang.en} dialogue and grammar practice`
+            : `${targetLang.zh}情景对话与语法讲解`;
+        }
+        if (!safeSpec.goal) {
+          safeSpec.goal = voiceLang === 'en'
+            ? `Generate and explain a practical ${targetLang.en} dialogue with the requested grammar.`
+            : `生成并讲解符合要求语法点的${targetLang.zh}实用情景对话。`;
+        }
+        if (!safeSpec.subject_type) safeSpec.subject_type = 'humanities';
+        learningSpecPayload = safeSpec;
+        if (sessionRuntime?.pm) {
+          sessionRuntime.pm.learning_spec = { ...(sessionRuntime.pm.learning_spec || {}), ...safeSpec };
+        }
+      }
+
       const response = await fetch(`${BOARD_API_BASE}/create-board`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          goal: goalText,
+          goal: goalWithLanguageLock,
           locale: voiceLang,
           sources,
+          board_only_sources: boardOnlySources,
+          pm_ready_for_board: isPmSummaryReadyForBoard(),
           pm_summary_bullets: Array.isArray(sessionRuntime?.pm?.pm_summary_bullets) ? sessionRuntime.pm.pm_summary_bullets : [],
-          learning_spec: sessionRuntime?.pm?.learning_spec || null
+          learning_spec: learningSpecPayload || sessionRuntime?.pm?.learning_spec || null
         })
       });
       if (!response.ok) {
@@ -2839,7 +3041,9 @@
     }
 
     function getAttachmentPayloadForPm() {
-      const atts = Array.isArray(sessionRuntime.attachments) ? sessionRuntime.attachments : [];
+      const atts = Array.isArray(sessionRuntime.attachments)
+        ? sessionRuntime.attachments.filter((a) => (a?.scope || '').toString() !== 'board_only')
+        : [];
       return atts.slice(0, 10).map((a) => ({
         id: (a?.id || '').toString(),
         type: (a?.type || 'attachment').toString(),
@@ -2848,6 +3052,343 @@
         summary: (a?.summary || '').toString(),
         key_points: Array.isArray(a?.key_points) ? a.key_points : []
       }));
+    }
+
+    function getBoardOnlyImageAttachments(limit = 4) {
+      const atts = Array.isArray(sessionRuntime.attachments) ? sessionRuntime.attachments : [];
+      return atts
+        .filter((a) => (a?.scope || '').toString() === 'board_only' && (a?.type || '').toString() === 'image')
+        .slice(0, Math.max(1, Number(limit) || 4));
+    }
+
+    function isExplicitDirectProblemSolveRequest(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /(^|[，,。.!！?？\s])解题([，,。.!！?？\s]|$)|开始.*解题|直接.*解题|看图.*解题|图片.*(题目|题).*(讲解|解题|作答|求解)|不要(再)?(提问|追问)|别(再)?问了.*(解题|讲解)|直接讲题/i.test(raw);
+    }
+
+    function inferQuickSubjectType(text) {
+      const raw = (text || '').toString().toLowerCase();
+      if (!raw) return 'mixed';
+      const sciHits = (raw.match(/数学|高数|高等数学|微积分|代数|几何|线代|概率|统计|物理|化学|生物|工程|编程|算法|science|stem|math|physics|chemistry|biology|calculus|algebra|geometry/g) || []).length;
+      const humHits = (raw.match(/语文|英语|日语|法语|德语|西班牙语|历史|文学|哲学|法学|政治|humanities|language|history|literature|philosophy|law|politics/g) || []).length;
+      if (sciHits > humHits) return 'science';
+      if (humHits > sciHits) return 'humanities';
+      return 'mixed';
+    }
+
+    function clipForPm(value, max = 300) {
+      const text = (value || '').toString().trim();
+      if (!text) return '';
+      return text.length <= max ? text : text.slice(0, max);
+    }
+
+    function countIndexedProblemItems(text = '') {
+      const raw = (text || '').toString();
+      if (!raw) return 0;
+      const ids = new Set();
+
+      let match;
+      const bracketRe = /[（(]\s*(\d{1,3})\s*[）)]/g;
+      while ((match = bracketRe.exec(raw)) !== null) {
+        ids.add(String(match[1]));
+      }
+
+      const lineRe = /(?:^|\n)\s*(\d{1,3})\s*[).．、]/g;
+      while ((match = lineRe.exec(raw)) !== null) {
+        ids.add(String(match[1]));
+      }
+
+      return ids.size;
+    }
+
+    function resolveInitialSolveBatchSize(text = '') {
+      const raw = (text || '').toString();
+      if (!raw) return DEFAULT_INITIAL_SOLVE_COUNT;
+      const patterns = [
+        /(?:先(?:解|做|处理|完成|讲)|优先|默认先|first)\s*(?:前)?\s*(\d{1,2})\s*(?:道)?(?:题|questions?|problems?)/i,
+        /(?:前|first)\s*(\d{1,2})\s*(?:道)?(?:题|questions?|problems?)/i
+      ];
+      for (const re of patterns) {
+        const m = raw.match(re);
+        if (!m || !m[1]) continue;
+        const n = Number(m[1]);
+        if (Number.isFinite(n) && n > 0) return Math.max(1, Math.min(10, n));
+      }
+      return DEFAULT_INITIAL_SOLVE_COUNT;
+    }
+
+    function buildInitialSolvePolicy(text = '', locale = 'zh-CN') {
+      const total = countIndexedProblemItems(text);
+      const requested = resolveInitialSolveBatchSize(text);
+      const capByTotal = total > 0 ? total : requested;
+      const batch = Math.max(1, Math.min(requested, capByTotal));
+      if (locale === 'en') {
+        return {
+          total,
+          batch,
+          constraint: `If multiple indexed sub-problems are detected, solve the first ${batch} now and leave the remaining items as pending checklist for next turn.`,
+          progressHint: `Default execution policy: solve first ${batch} problems now${total > 0 ? ` (detected ${total} indexed problems)` : ''}.`
+        };
+      }
+      return {
+        total,
+        batch,
+        constraint: `若检测到多道编号小题，本轮默认先完成前${batch}题，其余题目在黑板中标记为待办并等待下一轮。`,
+        progressHint: `默认执行策略：本轮先解前${batch}题${total > 0 ? `（检测到约${total}道编号题）` : ''}。`
+      };
+    }
+
+    function hasConcreteProblemContext(text = '') {
+      const raw = (text || '').toString().trim();
+      const boardOnlyHints = getBoardOnlyImageAttachments(3).map((att) => {
+        return [
+          (att?.summary || '').toString(),
+          (att?.extracted_text || '').toString()
+        ].filter(Boolean).join('\n');
+      }).filter(Boolean).join('\n');
+      const merged = [
+        raw,
+        boardOnlyHints,
+        (sessionRuntime?.pm?.goal_text || '').toString(),
+        Array.isArray(clarifyState?.notes) ? clarifyState.notes.slice(-8).join('\n') : ''
+      ].filter(Boolean).join('\n');
+      if (!merged.trim()) return false;
+      const indexed = countIndexedProblemItems(merged);
+      if (indexed > 0) return true;
+      return /(定义域|值域|方程|不等式|函数|求导|积分|证明|计算|题目|x|y|√|sin|cos|tan|ln|arcsin|solve|domain|derivative|integral|proof|equation)/i.test(merged);
+    }
+
+    function maybeFastTrackPmFromProblemImage(seedText = '', options = {}) {
+      if (isPmSummaryReadyForBoard()) return true;
+      const requestText = (seedText || '').toString().trim();
+      const requireExplicit = options && options.require_explicit === false ? false : true;
+      if (requireExplicit && !isExplicitDirectProblemSolveRequest(requestText)) return false;
+      const boardOnlyImages = getBoardOnlyImageAttachments(4);
+      if (!boardOnlyImages.length) return false;
+
+      const primary = boardOnlyImages[0] || {};
+      const summary = clipForPm(primary.summary, 420);
+      const extracted = clipForPm(primary.extracted_text, 1200);
+      const imageHint = [summary, extracted].filter(Boolean).join('\n');
+      if (!imageHint.trim() && !hasConcreteProblemContext(requestText)) return false;
+      const topicHint = extractTopicCandidate(requestText) || '';
+      const levelHint = extractLevelCandidate(requestText) || (voiceLang === 'en' ? 'Not provided' : '未提供');
+      const subjectType = inferQuickSubjectType([requestText, imageHint, topicHint].filter(Boolean).join('\n'));
+      const explicitSolve = isExplicitDirectProblemSolveRequest(requestText);
+      const solvePolicy = buildInitialSolvePolicy([requestText, imageHint].join('\n'), voiceLang === 'en' ? 'en' : 'zh-CN');
+
+      const topic = clipForPm(
+        topicHint
+          || (subjectType === 'science'
+            ? (voiceLang === 'en'
+              ? `Math/Science problem solving from uploaded image (first ${solvePolicy.batch})`
+              : `上传图片题目解析（理科，先解前${solvePolicy.batch}题）`)
+            : (voiceLang === 'en' ? 'Problem solving from uploaded image' : '上传图片题目解析')),
+        220
+      );
+      const goal = clipForPm(
+        voiceLang === 'en'
+          ? (explicitSolve
+            ? `Directly solve and explain the uploaded problem. If there are multiple indexed items, solve the first ${solvePolicy.batch} now with clear steps.`
+            : `Use the uploaded image as a clear task and start immediately. If there are multiple indexed items, solve the first ${solvePolicy.batch} now.`)
+          : (explicitSolve
+            ? `直接对上传图片中的题目进行解题讲解；若存在多道编号小题，本轮先解前${solvePolicy.batch}题，并给出清晰步骤。`
+            : `将上传图片视为明确学习任务，立即开始解题/讲解；若存在多道编号小题，本轮先解前${solvePolicy.batch}题。`),
+        420
+      );
+      const constraints = [
+        voiceLang === 'en' ? 'Skip PM clarification and start solving now.' : '跳过项目经理追问，直接开始解题。',
+        voiceLang === 'en' ? 'Focus strictly on the uploaded problem.' : '严格围绕上传题目内容讲解。',
+        solvePolicy.constraint
+      ];
+      const materialsSummary = clipForPm(imageHint, 900);
+      const bullets = [
+        voiceLang === 'en' ? `Learning task: ${topic}` : `学习任务：${topic}`,
+        voiceLang === 'en' ? `Goal: ${goal}` : `目标：${goal}`,
+        voiceLang === 'en' ? `Current level: ${levelHint}` : `当前水平：${levelHint}`,
+        solvePolicy.progressHint,
+        explicitSolve
+          ? (voiceLang === 'en' ? 'User explicitly requested immediate problem solving from image.' : '用户明确要求基于图片题目立即解题。')
+          : (voiceLang === 'en' ? 'Uploaded image is treated as clear learning intent; PM clarification skipped.' : '已将上传图片视为明确学习意图，跳过项目经理追问。')
+      ].map((x) => clipForPm(x, 180)).filter(Boolean);
+
+      sessionRuntime.pm.learning_spec = {
+        topic,
+        goal,
+        level: clipForPm(levelHint, 120),
+        time_budget_min: 0,
+        preferred_style: voiceLang === 'en' ? 'step-by-step' : '分步讲解',
+        constraints,
+        materials_summary: materialsSummary,
+        subject_type: subjectType,
+        initial_batch_size: solvePolicy.batch,
+        detected_problem_count: solvePolicy.total
+      };
+      sessionRuntime.pm.pm_summary_bullets = bullets.slice(0, 8);
+      sessionRuntime.pm.clarity_score = Math.max(90, Number(sessionRuntime.pm.clarity_score) || 0);
+      sessionRuntime.pm.ready_for_board = true;
+      sessionRuntime.pm.goal_text = [
+        voiceLang === 'en' ? `Learning goal: ${goal}` : `学习目标：${goal}`,
+        voiceLang === 'en' ? `Current level: ${levelHint}` : `当前水平：${levelHint}`,
+        voiceLang === 'en' ? `Constraint: Start solving immediately from uploaded image` : '约束：基于上传图片立即开始解题',
+        solvePolicy.progressHint,
+        materialsSummary ? (voiceLang === 'en' ? `Material summary: ${materialsSummary}` : `材料摘要：${materialsSummary}`) : ''
+      ].filter(Boolean).join('\n');
+      updateClarityUI();
+      return true;
+    }
+
+    function maybeFastTrackPmFromExplicitTaskText(seedText = '', options = {}) {
+      if (isPmSummaryReadyForBoard()) return true;
+      const requestText = (seedText || '').toString().trim();
+      if (!requestText) return false;
+
+      const requireExplicit = options && options.require_explicit === false ? false : true;
+      const hasContextGoal = !!(
+        (sessionRuntime?.pm?.goal_text || '').toString().trim()
+        || (clarifyState?.topic || '').toString().trim()
+        || extractTopicCandidate(requestText)
+      );
+      const clearTask = isExplicitDirectProblemSolveRequest(requestText)
+        || isLanguageTaskRequest(requestText)
+        || isExplicitLessonTextRequest(requestText)
+        || hasClearLearningGoal(requestText)
+        || ((isExplicitBoardCreateRequest(requestText) || isForceStartRequest(requestText)) && hasContextGoal);
+      if (requireExplicit && !clearTask) return false;
+      if (!clearTask) return false;
+
+      const targetLang = resolveTargetLanguageForBoard(requestText);
+      const topicHint = extractTopicCandidate(requestText) || '';
+      const levelHint = extractLevelCandidate(requestText) || (voiceLang === 'en' ? 'Not provided' : '未提供');
+
+      let subjectType = inferQuickSubjectType([
+        requestText,
+        topicHint,
+        targetLang ? `${targetLang.zh} ${targetLang.en}` : ''
+      ].filter(Boolean).join('\n'));
+      const forceSubjectType = (options?.force_subject_type || '').toString().trim().toLowerCase();
+      if (forceSubjectType === 'science' || forceSubjectType === 'humanities' || forceSubjectType === 'mixed') {
+        subjectType = forceSubjectType;
+      } else if (targetLang && subjectType !== 'science') {
+        subjectType = 'humanities';
+      }
+
+      const wantsSolve = isExplicitDirectProblemSolveRequest(requestText);
+      const hasSolveContext = hasConcreteProblemContext(requestText);
+      if (wantsSolve && !hasSolveContext) return false;
+      const wantsLanguage = isLanguageTaskRequest(requestText) || !!targetLang;
+      const solvePolicy = buildInitialSolvePolicy(requestText, voiceLang === 'en' ? 'en' : 'zh-CN');
+      const topic = clipForPm(
+        topicHint || (
+          wantsLanguage
+            ? (targetLang
+              ? (voiceLang === 'en' ? `${targetLang.en} dialogue + grammar` : `${targetLang.zh}情景对话与语法`)
+              : (voiceLang === 'en' ? 'Language dialogue and grammar task' : '语言情景对话与语法任务'))
+            : (voiceLang === 'en' ? 'Clear user task from text input' : '用户文本中的明确学习任务')
+        ),
+        220
+      );
+
+      let goal = '';
+      if (wantsSolve) {
+        goal = voiceLang === 'en'
+          ? `Start solving the requested problem immediately with clear step-by-step explanation; default to first ${solvePolicy.batch} indexed items now.`
+          : `对用户指定题目立即开始解题，并给出清晰分步讲解；若有多道编号小题，本轮默认先解前${solvePolicy.batch}题。`;
+      } else if (wantsLanguage) {
+        goal = targetLang
+          ? (voiceLang === 'en'
+            ? `Generate and explain practical ${targetLang.en} lesson content based on user request.`
+            : `基于用户要求生成并讲解实用${targetLang.zh}学习内容。`)
+          : (voiceLang === 'en'
+            ? 'Generate and explain practical language-learning lesson content based on user request.'
+            : '基于用户要求生成并讲解实用语言学习内容。');
+      } else {
+        goal = voiceLang === 'en'
+          ? 'Treat the current user message as a clear task and start board generation immediately.'
+          : '将当前用户消息视为明确任务，立即开始板书生成。';
+      }
+
+      const constraints = [
+        voiceLang === 'en'
+          ? 'Skip additional PM follow-up questions and proceed to board generation now.'
+          : '跳过项目经理额外追问，立即推进板书生成。',
+        voiceLang === 'en'
+          ? 'All lesson text/dialogue generation must be done by Blackboard Manager AI, not realtime tutor.'
+          : '课文/对话正文生成必须由板书管理AI完成，实时讲师AI不得代做内容生成。'
+      ];
+      if (targetLang) {
+        constraints.push(
+          voiceLang === 'en'
+            ? `Target language lock: lesson text/dialogue must be in ${targetLang.en}.`
+            : `目标语言锁定：课文/对话原文必须使用${targetLang.zh}。`
+        );
+      }
+      if (wantsSolve) {
+        constraints.push(solvePolicy.constraint);
+      }
+
+      const bullets = [
+        voiceLang === 'en' ? `Learning task: ${topic}` : `学习任务：${topic}`,
+        voiceLang === 'en' ? `Goal: ${goal}` : `目标：${goal}`,
+        voiceLang === 'en' ? `Current level: ${levelHint}` : `当前水平：${levelHint}`,
+        voiceLang === 'en'
+          ? 'User intent is clear; PM is finalized for board handoff.'
+          : '用户意图已清晰；项目经理总结已完成并移交板书管理AI。'
+      ].map((x) => clipForPm(x, 180)).filter(Boolean);
+
+      sessionRuntime.pm.learning_spec = {
+        topic,
+        goal: clipForPm(goal, 420),
+        level: clipForPm(levelHint, 120),
+        time_budget_min: 0,
+        preferred_style: voiceLang === 'en' ? 'structured classroom' : '结构化课堂讲解',
+        constraints: constraints.slice(0, 10),
+        materials_summary: clipForPm(requestText, 900),
+        subject_type: subjectType,
+        target_language: targetLang?.code || '',
+        target_language_name: targetLang?.zh || '',
+        initial_batch_size: wantsSolve ? solvePolicy.batch : 0,
+        detected_problem_count: wantsSolve ? solvePolicy.total : 0
+      };
+      sessionRuntime.pm.pm_summary_bullets = bullets.slice(0, 8);
+      sessionRuntime.pm.clarity_score = Math.max(92, Number(sessionRuntime.pm.clarity_score) || 0);
+      sessionRuntime.pm.ready_for_board = true;
+      sessionRuntime.pm.goal_text = [
+        voiceLang === 'en' ? `Learning goal: ${goal}` : `学习目标：${goal}`,
+        voiceLang === 'en' ? `Current level: ${levelHint}` : `当前水平：${levelHint}`,
+        targetLang
+          ? (voiceLang === 'en' ? `Target language: ${targetLang.en}` : `目标语言：${targetLang.zh}`)
+          : '',
+        wantsSolve ? solvePolicy.progressHint : '',
+        voiceLang === 'en'
+          ? 'Constraint: Board Manager AI must generate lesson text first; tutor starts after board + PM summary are both ready.'
+          : '约束：必须先由板书管理AI生成板书，且PM总结完成后，讲师AI才可开始讲解。'
+      ].filter(Boolean).join('\n');
+      updateClarityUI();
+      return true;
+    }
+
+    function isPmSummaryReadyForBoard() {
+      const pm = sessionRuntime?.pm || {};
+      const bullets = Array.isArray(pm.pm_summary_bullets) ? pm.pm_summary_bullets.filter(Boolean) : [];
+      const spec = pm.learning_spec && typeof pm.learning_spec === 'object' ? pm.learning_spec : null;
+      const topic = (spec?.topic || '').toString().trim();
+      const goal = (spec?.goal || '').toString().trim();
+      const subjectType = (spec?.subject_type || '').toString().trim().toLowerCase();
+      const validSubject = subjectType === 'science' || subjectType === 'humanities' || subjectType === 'mixed';
+      return pm.ready_for_board === true && bullets.length > 0 && !!topic && !!goal && validSubject;
+    }
+
+    async function ensurePmSummaryReadyForBoard(seedText = '') {
+      if (isPmSummaryReadyForBoard()) return true;
+      if (maybeFastTrackPmFromProblemImage(seedText, { require_explicit: false })) return true;
+      if (maybeFastTrackPmFromExplicitTaskText(seedText, { require_explicit: false })) return true;
+      const probe = (seedText || sessionRuntime?.pm?.goal_text || buildGoalTextFromClarify() || '').toString().trim();
+      if (probe) {
+        await runPmAnalyzeAndMaybeConfirm(probe);
+      }
+      return isPmSummaryReadyForBoard();
     }
 
     async function runPmAnalyzeAndMaybeConfirm(latestUserText) {
@@ -2908,38 +3449,36 @@
     };
 
     function openConfirmGenerateModal(signature, goalText) {
-      const modal = document.getElementById('confirm-generate-modal');
-      const desc = document.getElementById('confirm-generate-desc');
-      if (!modal || !desc) return;
+      if (hasUnresolvedActionCard('confirm_generate')) return;
       confirmGenerateState.open = true;
       confirmGenerateState.signature = signature || '';
       confirmGenerateState.goalText = goalText || '';
       const pmBullets = Array.isArray(sessionRuntime?.pm?.pm_summary_bullets) ? sessionRuntime.pm.pm_summary_bullets : [];
-      if (pmBullets.length) {
-        desc.textContent = pmBullets.map(x => `- ${x}`).join('\n');
-      } else {
-        desc.textContent = voiceLang === 'en'
+      const descText = pmBullets.length
+        ? pmBullets.map(x => `- ${x}`).join('\n')
+        : (voiceLang === 'en'
           ? `Topic: ${clarifyState.topic}\nLevel: ${clarifyState.level}`
-          : `学习目标：${clarifyState.topic}\n当前水平：${clarifyState.level}`;
-      }
-      modal.classList.remove('hidden');
-      // 锁滚动（简单处理）
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeConfirmGenerateModal() {
-      const modal = document.getElementById('confirm-generate-modal');
-      if (!modal) return;
-      modal.classList.add('hidden');
-      confirmGenerateState.open = false;
-      document.body.style.overflow = '';
+          : `学习目标：${clarifyState.topic}\n当前水平：${clarifyState.level}`);
+      const hint = voiceLang === 'en'
+        ? '\n\nTo save tokens, the tutor only cites materials relevant to the current goal; you can select text in the materials area and click "增加讲师注意力篇幅" to add more.'
+        : '\n\n为了更高效，讲师默认只引用与当前目标相关的材料片段；如需更多内容，可在材料区框选并点击"增加讲师注意力篇幅"。';
+      pushActionCard({
+        type: 'confirm_generate',
+        title: voiceLang === 'en'
+          ? 'Requirements are clear. Generate blackboard and start the class?'
+          : '需求已经足够清晰，是否生成版书并开始上课？',
+        desc: descText + hint,
+        yesLabel: voiceLang === 'en' ? 'Yes, generate and start' : '是，生成并开始上课',
+        noLabel: voiceLang === 'en' ? 'No, I want to add more' : '否，我还想补充',
+        signature: confirmGenerateState.signature,
+        goalText: confirmGenerateState.goalText || goalText || sessionRuntime?.pm?.goal_text || buildGoalTextFromClarify()
+      });
     }
 
     async function resolveConfirmGenerateDecision(yes) {
       const goalText = confirmGenerateState.goalText
         || sessionRuntime?.pm?.goal_text
         || buildGoalTextFromClarify();
-      closeConfirmGenerateModal();
       if (yes) {
         await runCreateBoardFlow(goalText);
         return;
@@ -2953,7 +3492,7 @@
     function isExplicitBoardCreateRequest(text) {
       const raw = (text || '').toString().trim();
       if (!raw) return false;
-      return /生成(新的)?板书|生成(新的)?版书|开始生成|写(一份|一个)?板书|做(一份|一个)?板书|出(一份|一个)?板书|开始上课|开始讲课|重新(创建|生成)板书|重建板书|再(生成|做)(一份|一个)?板书/i.test(raw);
+      return /生成(新的)?板书|生成(新的)?版书|开始生成|写(一份|一个)?板书|做(一份|一个)?板书|出(一份|一个)?板书|开始上课|开始讲课|重新(创建|生成)板书|重建板书|再(生成|做)(一份|一个)?板书|直接解题|开始解题|看图解题/i.test(raw);
     }
 
     function isExplicitBoardRecreateRequest(text) {
@@ -2965,7 +3504,10 @@
     function isExplicitLessonTextRequest(text) {
       const raw = (text || '').toString().trim();
       if (!raw) return false;
-      return /生成(一篇|一段)?课文|生成(一段|一篇)?对话|生成情景对话|生成(阅读)?课文原文|生成课文板书|来(一篇|一段)?课文|给我(一篇|一段)?课文|写(一篇|一段)?课文/i.test(raw);
+      if (isLanguageTaskRequest(raw)) return true;
+      const directPattern = /(生成|写|给我|来一段|来一篇|请给|重写|重生成|重新生成|改写).{0,20}(课文|对话|情景对话|场景对话|阅读原文|完整对话|讲解稿|讲义|lesson\s*text|dialogue|conversation|passage)/i;
+      const reversePattern = /(课文|对话|情景对话|场景对话|阅读原文|完整对话|lesson\s*text|dialogue|conversation|passage).{0,20}(生成|重写|重生成|重新生成|开始|直接|给我|来一段|来一篇)/i;
+      return directPattern.test(raw) || reversePattern.test(raw);
     }
 
     function buildLessonTextUpdateRequest(userText) {
@@ -2977,28 +3519,120 @@
         : '';
       const goal = (board?.goal || '').toString().trim();
       const extras = clarifyState.notes.filter(Boolean).slice(-6);
+      const targetLang = resolveTargetLanguageForBoard([userText, goal, extras.join('\n')].filter(Boolean).join('\n'));
 
       return [
         `用户请求：${(userText || '').toString().trim()}`,
         goal ? `当前黑板目标：${goal}` : '',
         nodeId ? `当前节点：${nodeId}${nodeTitle ? `（${nodeTitle}）` : ''}` : '',
         extras.length ? `补充信息（最近）：\n${extras.map(x => `- ${x}`).join('\n')}` : '',
+        targetLang
+          ? (voiceLang === 'en'
+            ? `Target language lock: lesson/dialogue text must be in ${targetLang.en}, not English substitutes.`
+            : `目标语言强约束：课文/对话原文必须使用${targetLang.zh}，不得改用英语替代。`)
+          : '',
+        voiceLang === 'en'
+          ? 'Role boundary: Blackboard Manager AI writes lesson text; realtime tutor explains after board update.'
+          : '角色边界：课文正文由板书管理AI写入黑板，实时讲师只在更新后做讲解。',
         '任务：请把“完整课文/情景对话原文”写到黑板中（node.content 或新增节点的 content），必须给出可直接学习的原文文本（用 \\n 换行，分角色/分段），排版清晰，避免只给概述。',
         '如果当前黑板没有专门承载课文的节点，请新增一个节点（例如「完整情景对话课文」/「阅读课文原文」），并将其设为 teaching 作为当前讲解节点。'
       ].filter(Boolean).join('\n');
+    }
+
+    function buildDirectSolveBoardUpdateRequest(userText) {
+      const board = boardState.board;
+      const goal = (board?.goal || '').toString().trim();
+      const extras = clarifyState.notes.filter(Boolean).slice(-6);
+      const boardOnlyAttributions = getBoardOnlyImageAttachments(2).map((att, idx) => {
+        const title = (att?.title || att?.filename || `图片${idx + 1}`).toString().trim();
+        const summary = clipForPm(att?.summary, 260);
+        const extracted = clipForPm(att?.extracted_text, 520);
+        return [
+          `- ${title}`,
+          summary ? `  摘要: ${summary}` : '',
+          extracted ? `  文本: ${extracted}` : ''
+        ].filter(Boolean).join('\n');
+      }).filter(Boolean);
+      const solvePolicy = buildInitialSolvePolicy([userText, boardOnlyAttributions.join('\n'), goal].join('\n'), voiceLang === 'en' ? 'en' : 'zh-CN');
+
+      return [
+        `用户请求：${(userText || '').toString().trim()}`,
+        goal ? `当前黑板目标：${goal}` : '',
+        extras.length ? `最近补充：\n${extras.map(x => `- ${x}`).join('\n')}` : '',
+        boardOnlyAttributions.length ? `图片题干参考（仅板书生成可见）：\n${boardOnlyAttributions.join('\n')}` : '',
+        solvePolicy.progressHint,
+        '任务要求：请先更新黑板，不要直接让讲师口头解题。',
+        `若存在多道编号小题，本轮只完成前${solvePolicy.batch}题，黑板中必须保留全部题号进度清单（完成/待办）。`,
+        '如果当前板书是通用模板，请改写为“题干 + 分题解答 + 结论 + 待办题目”。',
+        '每道已完成题必须包含：关键条件、计算过程、最终结论；禁止空泛流程模板。'
+      ].filter(Boolean).join('\n');
+    }
+
+    function collectBoardAllText(board) {
+      const safeBoard = board && typeof board === 'object' ? board : {};
+      const outline = Array.isArray(safeBoard.outline) ? safeBoard.outline : [];
+      const nodes = safeBoard.nodes && typeof safeBoard.nodes === 'object' ? safeBoard.nodes : {};
+      const parts = [];
+      if (safeBoard.goal) parts.push(String(safeBoard.goal));
+      outline.forEach((node) => {
+        if (!node || !node.id) return;
+        parts.push(`${node.id} ${node.title || ''}`.trim());
+        const nodeData = nodes[node.id] && typeof nodes[node.id] === 'object' ? nodes[node.id] : null;
+        if (nodeData?.content) parts.push(String(nodeData.content));
+        if (Array.isArray(nodeData?.examples) && nodeData.examples.length) {
+          parts.push(nodeData.examples.map(x => String(x || '')).join('\n'));
+        }
+      });
+      return parts.join('\n').trim();
+    }
+
+    function shouldAutoEnrichSolveBoard(board, goalText = '') {
+      if (!isSolveModeGoalText(goalText)) return false;
+      const text = collectBoardAllText(board);
+      if (!text) return true;
+      const hasStepSignals = /(步骤|step|结论|答案|定义域|值域|x∈|x>=|x<=|x≥|x≤|=)/i.test(text);
+      const looksLikeChecklistOnly = /(题目清单|progress checklist|problem checklist)/i.test(text)
+        && !hasStepSignals;
+      const genericTemplateOnly = /(题目一|题目二|1\.题目一|2\.题目二)/i.test(text)
+        && !/(步骤1|步骤2|最终答案|结论)/i.test(text);
+      return looksLikeChecklistOnly || genericTemplateOnly || !hasStepSignals;
     }
 
     async function runCreateBoardFlow(goalText) {
       if (boardState.creatingBoard) return;
       const cleanGoal = (goalText || '').toString().trim();
       if (!cleanGoal) return;
+      confirmGenerateState.open = false;
+
+      const pmReady = await ensurePmSummaryReadyForBoard(cleanGoal);
+      if (!pmReady) {
+        pushSessionMessage('system', voiceLang === 'en'
+          ? 'The PM summary is not complete yet. We will continue clarifying first, then generate the blackboard and start teaching together.'
+          : '项目经理总结还未完成。我们先继续澄清，待“需求总结 + 板书生成”都完成后再开始讲解。');
+        await setRealtimeClarificationMode();
+        return;
+      }
 
       boardState.creatingBoard = true;
       clarifyState.proposalPending = false;
       clarifyState.lastProposalSignature = `${clarifyState.topic}||${clarifyState.level}`;
       try {
         pushSessionMessage('system', voiceLang === 'en' ? 'Generating blackboard...' : '正在生成板书...');
-        const board = await createBoardFromGoal(cleanGoal);
+        let board = await createBoardFromGoal(cleanGoal);
+        if (shouldAutoEnrichSolveBoard(board, cleanGoal)) {
+          pushSessionMessage('system', voiceLang === 'en'
+            ? 'Detected checklist-only board for solving task. Enriching board with concrete solved steps now...'
+            : '检测到当前是解题任务且板书仍偏清单模板，正在自动补写“前2题分步解答”…');
+          const enforceRequest = buildDirectSolveBoardUpdateRequest(
+            voiceLang === 'en'
+              ? 'Please immediately rewrite the board into concrete solved steps for the first batch problems.'
+              : '请立刻把黑板改写为前2题的具体分步解题与结论。'
+          );
+          const enriched = await updateBoardByUserInput(enforceRequest).catch(() => null);
+          if (enriched?.board) {
+            board = enriched.board;
+          }
+        }
         renderBoard(board);
         await bindBoardContextToVoice();
         const kickoffPrompt = buildTeachingKickoffPrompt(cleanGoal, board);
@@ -3009,6 +3643,24 @@
       } finally {
         boardState.creatingBoard = false;
       }
+    }
+
+    async function maybeAutoStartTaskFromUploadedImage(seedText = '') {
+      if (boardState.board?.board_id) return false;
+      if (boardState.creatingBoard) return false;
+      if (!getBoardOnlyImageAttachments(1).length) return false;
+
+      const primed = maybeFastTrackPmFromProblemImage(seedText, { require_explicit: false });
+      if (!primed) return false;
+
+      const goalText = (sessionRuntime?.pm?.goal_text || seedText || buildGoalTextFromClarify()).toString().trim();
+      if (!goalText) return false;
+
+      pushSessionMessage('system', voiceLang === 'en'
+        ? 'Detected a clear task from uploaded image. Skipping PM clarification and generating blackboard now.'
+        : '已识别到上传图片中的明确任务，跳过项目经理追问，正在直接生成板书并开始讲解。');
+      await runCreateBoardFlow(goalText);
+      return true;
     }
 
     async function runUpdateBoardFlow(userInput) {
@@ -3024,9 +3676,18 @@
         if (result?.board) {
           renderBoard(result.board);
           await bindBoardContextToVoice();
-          const prompt = voiceLang === 'en'
-            ? 'The blackboard has been updated. Continue teaching from the current node. Do not paste the full lesson text again; focus on explanation and a short check question.'
-            : '黑板已更新。请从当前节点继续讲解：不要把整段课文原文再粘贴一遍，重点做讲解与带练，并在本轮末尾给一个简短检查问题。';
+          const mergedGoal = [
+            (result?.board?.goal || '').toString(),
+            clean
+          ].join('\n');
+          const solveMode = isExplicitDirectProblemSolveRequest(mergedGoal) || /定义域|值域|方程|不等式|求导|积分|证明|计算|解题/i.test(mergedGoal);
+          const prompt = solveMode
+            ? (voiceLang === 'en'
+              ? 'Blackboard updated. Start solving immediately from the current node. No greeting, no preface, no asking for extra context first. Output step-by-step solution and final answer.'
+              : '黑板已更新。请从当前节点立刻开始解题：不要开场白，不要先铺垫或追问，直接给出分步过程与最终结论。')
+            : (voiceLang === 'en'
+              ? 'The blackboard has been updated. Continue teaching from the current node. Do not paste the full lesson text again; focus on explanation and a short check question.'
+              : '黑板已更新。请从当前节点继续讲解：不要把整段课文原文再粘贴一遍，重点做讲解与带练，并在本轮末尾给一个简短检查问题。');
           await sendTextByPreferredTransport(prompt);
         }
       } catch (e) {
@@ -3042,18 +3703,47 @@
       if (!raw) return false;
 
       const wantsLesson = isExplicitLessonTextRequest(raw);
-      const wantsCreate = isExplicitBoardCreateRequest(raw) || wantsLesson;
+      const wantsLanguageTask = isLanguageTaskRequest(raw);
+      const wantsDirectSolve = isExplicitDirectProblemSolveRequest(raw);
+      const wantsForceStart = isForceStartRequest(raw);
+      const hasDirectGoal = hasClearLearningGoal(raw);
+      const wantsCreate = isExplicitBoardCreateRequest(raw) || wantsLesson || wantsLanguageTask || wantsDirectSolve || wantsForceStart || hasDirectGoal;
       const wantsRecreate = isExplicitBoardRecreateRequest(raw);
 
       if (!boardState.board) {
         if (!wantsCreate) return false;
-        if (!clarifyState.topic || !clarifyState.level) {
-          pushSessionMessage('system', voiceLang === 'en'
-            ? 'To generate the blackboard, please clarify: what to learn + your current level.'
-            : '要生成板书，请先把“学什么 + 当前水平”说清楚（你可以继续回答右侧的问题）。');
+        // 题目图片 + 明确“直接解题”时走快速通道：PM最小总结后立即推进板书生成
+        if (wantsDirectSolve && getBoardOnlyImageAttachments(1).length) {
+          const primed = maybeFastTrackPmFromProblemImage(raw, { require_explicit: false });
+          if (!primed) {
+            pushSessionMessage('system', voiceLang === 'en'
+              ? 'I cannot read enough problem text from the image yet. Please re-upload a clearer image or paste key lines, then I will solve immediately.'
+              : '我还没从图片里读到足够清晰的题干信息。请重传更清晰图片或补充题干文字，我会立刻开始解题。');
+            await setRealtimeClarificationMode();
+            return true;
+          }
+          await runCreateBoardFlow(raw || buildGoalTextFromClarify());
           return true;
         }
-        await runCreateBoardFlow(buildGoalTextFromClarify());
+
+        // 文本中已明确任务（如法语情景对话/语法讲解）：直接完成PM最小总结并进入板书生成
+        if (wantsLesson || wantsLanguageTask || wantsForceStart || wantsDirectSolve || hasDirectGoal) {
+          maybeFastTrackPmFromExplicitTaskText(raw, { require_explicit: false });
+          const pmGoal = (sessionRuntime?.pm?.goal_text || '').toString().trim();
+          await runCreateBoardFlow(pmGoal || raw || buildGoalTextFromClarify());
+          return true;
+        }
+
+        // 即使用户强制要求“开始上课”，也必须先以 PM 总结作为闸门，避免讲师抢跑
+        await runPmAnalyzeAndMaybeConfirm(raw);
+        const pmGoal = (sessionRuntime?.pm?.goal_text || '').toString().trim();
+        await runCreateBoardFlow(pmGoal || buildGoalTextFromClarify());
+        return true;
+      }
+
+      if (wantsDirectSolve) {
+        const request = buildDirectSolveBoardUpdateRequest(raw);
+        await runUpdateBoardFlow(request);
         return true;
       }
 
@@ -3066,17 +3756,18 @@
         return true;
       }
 
+      // 语言课文/情景对话/语法内容的重生成，统一交给板书管理AI更新
+      if (wantsLesson || wantsLanguageTask) {
+        const request = buildLessonTextUpdateRequest(raw);
+        await runUpdateBoardFlow(request);
+        return true;
+      }
+
       // 用户在已有板书时说“生成板书/开始上课”等：解释为更新/补全当前板书
       if (wantsCreate) {
         const request = voiceLang === 'en'
           ? `User asks to generate a blackboard but one already exists. Do NOT create a new board. Update and enrich the CURRENT board based on user goal and latest constraints.\nUser request: ${raw}`
           : `用户要求“生成板书/开始上课”，但当前已存在板书。不要新开板书，请基于【当前板书】进行补全与更新，使其更贴合最新需求。\n用户原话：${raw}`;
-        await runUpdateBoardFlow(request);
-        return true;
-      }
-
-      if (boardState.board && wantsLesson) {
-        const request = buildLessonTextUpdateRequest(raw);
         await runUpdateBoardFlow(request);
         return true;
       }
@@ -3109,10 +3800,34 @@
       };
     }
 
+    function isSolveModeGoalText(text) {
+      const raw = (text || '').toString().trim();
+      if (!raw) return false;
+      return /(解题|求解|定义域|值域|方程|不等式|求导|积分|证明|计算|题目|solve|domain|equation|inequality|derivative|integral|proof|compute)/i.test(raw);
+    }
+
     function buildTeachingKickoffPrompt(userGoal, board) {
       const summary = summarizeBoardForTutor(board);
       const goal = String(userGoal || '').trim();
+      const solveMode = isSolveModeGoalText([goal, summary.boardGoal || ''].join('\n'));
       if (voiceLang === 'en') {
+        if (solveMode) {
+          return [
+            'Blackboard is ready. Start solving immediately from the current node.',
+            `User learning goal: ${goal}`,
+            `Blackboard goal: ${summary.boardGoal || goal}`,
+            `Board ID: ${summary.boardId || 'N/A'}`,
+            `Current node: ${summary.currentNodeId || 'N/A'}`,
+            'Blackboard outline:',
+            summary.outlineSummary || 'N/A',
+            'Current node content:',
+            summary.currentNodeContent || 'N/A',
+            'Hard requirements:',
+            '- No greeting and no long preface.',
+            '- Do not ask for extra context first.',
+            '- Solve directly with numbered steps and final answer.'
+          ].join('\n');
+        }
         return [
           'Start a classroom-style lesson based on the provided blackboard.',
           `User learning goal: ${goal}`,
@@ -3127,6 +3842,24 @@
           '- Start teaching from the current node now.',
           '- Keep all explanations aligned with the blackboard structure.',
           '- End this turn with one short check question for the learner.'
+        ].join('\n');
+      }
+
+      if (solveMode) {
+        return [
+          '黑板已就绪，请从当前节点立刻开始解题。',
+          `用户学习目标：${goal}`,
+          `黑板目标：${summary.boardGoal || goal}`,
+          `黑板ID：${summary.boardId || 'N/A'}`,
+          `当前节点：${summary.currentNodeId || 'N/A'}`,
+          '黑板大纲：',
+          summary.outlineSummary || 'N/A',
+          '当前节点内容：',
+          summary.currentNodeContent || 'N/A',
+          '硬性要求：',
+          '- 不要开场问候，不要长铺垫。',
+          '- 不要先追问额外信息。',
+          '- 直接给出分步解题与最终答案。'
         ].join('\n');
       }
 
@@ -3750,6 +4483,11 @@
 
       try {
         // 如果用户在对 action card 口头回复“是/否”，自动触发对应决策
+        const pendingConfirm = getLatestUnresolvedActionCard('confirm_generate');
+        if (pendingConfirm && (isAffirmativeText(cleanText) || isNegativeText(cleanText))) {
+          await handleActionCardDecision(pendingConfirm, isAffirmativeText(cleanText));
+          return;
+        }
         const pendingCreate = getLatestUnresolvedActionCard('create_board');
         if (pendingCreate && (isAffirmativeText(cleanText) || isNegativeText(cleanText))) {
           await handleActionCardDecision(pendingCreate, isAffirmativeText(cleanText));
@@ -3866,6 +4604,11 @@
                   pushSessionMessage('user', transcript);
                   // 允许用户先语音表达学习目标/问题，再自动生成黑板并绑定讲师
                   if (isAffirmativeText(transcript) || isNegativeText(transcript)) {
+                    const pendingConfirm = getLatestUnresolvedActionCard('confirm_generate');
+                    if (pendingConfirm) {
+                      handleActionCardDecision(pendingConfirm, isAffirmativeText(transcript));
+                      return;
+                    }
                     const pendingCreate = getLatestUnresolvedActionCard('create_board');
                     if (pendingCreate) {
                       handleActionCardDecision(pendingCreate, isAffirmativeText(transcript));
@@ -3939,7 +4682,9 @@
             ? `\n\nUploaded materials (summary, can be referenced for clarification):\n${materials.slice(0, 1200)}`
             : `\n\n用户已上传资料（摘要，可用于澄清）：\n${materials.slice(0, 1200)}`)
           : '';
-        const atts = Array.isArray(sessionRuntime.attachments) ? sessionRuntime.attachments : [];
+        const atts = Array.isArray(sessionRuntime.attachments)
+          ? sessionRuntime.attachments.filter((a) => (a?.scope || '').toString() !== 'board_only')
+          : [];
         const attHint = atts.length
           ? (voiceLang === 'en'
             ? `\n\nAttachments list (structured):\n${atts.slice(0, 8).map((a, idx) => {
@@ -3965,12 +4710,14 @@
               'You are the Realtime Clarification Agent for "Blackboard AI".',
               'Ask 2-4 short questions per turn to clarify learning goal and current level.',
               'Do NOT teach yet. Do NOT generate blackboard content. Do NOT claim you cannot generate a blackboard.',
+              'If user asks for direct lesson text/dialogue/problem-solving generation, do not generate it yourself; reply in one sentence that it will be handed to Blackboard Manager AI.',
               'When clear enough, summarize in bullets and ask for confirmation to generate the blackboard (yes/no).'
             ].join('\n') + materialHint + attHint + specHint
             : [
               '你是「Blackboard AI」的实时澄清引导员。',
               '每轮问 2–4 个短问题，澄清“学什么 / 当前水平 / 关键约束”。',
               '现在不要开始讲解知识点；不要生成板书正文；不要说“无法生成板书”。',
+              '如果用户要求直接生成课文/对话/解题内容，你不要代做生成，只用一句话说明“已转交板书管理AI”。',
               '当信息足够清晰：用要点复述后，询问用户是否生成板书（是/否）。'
             ].join('\n') + materialHint + attHint + specHint
         }));
@@ -4011,12 +4758,9 @@
       const bbSaveSelectionBtn = document.getElementById('bb-save-selection-btn');
       const bbSaveBtn = document.getElementById('bb-save-btn');
       const bbCancelBtn = document.getElementById('bb-cancel-btn');
-      const bbAddExampleBtn = document.getElementById('bb-add-example-btn');
       const addAttentionBtn = document.getElementById('selection-add-attention-btn');
       const saveNoteBtn = document.getElementById('selection-save-note-btn');
-      const confirmYesBtn = document.getElementById('confirm-generate-yes');
-      const confirmNoBtn = document.getElementById('confirm-generate-no');
-      const confirmCloseBtn = document.getElementById('confirm-generate-close');
+      const chatDropZone = document.getElementById('chat-drop-zone');
       if (sendBtn) {
         sendBtn.addEventListener('click', handleChatSend);
       }
@@ -4038,6 +4782,12 @@
         autoResizeChatInput(inputEl);
         inputEl.addEventListener('input', () => {
           autoResizeChatInput(inputEl);
+        });
+        inputEl.addEventListener('paste', async (event) => {
+          const files = getPastedFiles(event.clipboardData);
+          if (!files.length) return;
+          event.preventDefault();
+          await handlePastedFiles(files);
         });
         inputEl.addEventListener('keydown', (event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
@@ -4117,6 +4867,7 @@
             addAttachmentRecord({
               id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
               type: 'image',
+              scope: 'board_only',
               title: name || (voiceLang === 'en' ? 'Image' : '图片'),
               filename: name,
               extracted_text: extracted,
@@ -4124,14 +4875,12 @@
               key_points: points.slice(0, 12),
               created_at: new Date().toISOString()
             });
-            const block = [
-              `【附件图片识别】${name || (voiceLang === 'en' ? 'Image' : '图片')}`,
-              extracted ? `---\n${extracted}` : (voiceLang === 'en' ? '(No text detected)' : '（未识别到明显文字）'),
-              summary ? `---\n摘要：${summary}` : '',
-              points.length ? `要点：\n${points.slice(0, 8).map(p => `- ${p}`).join('\n')}` : ''
-            ].filter(Boolean).join('\n');
-            await addTextToMaterials(block);
-            pushSessionMessage('system', voiceLang === 'en' ? 'Image added to materials.' : '已将图片识别结果加入材料区。');
+            const started = await maybeAutoStartTaskFromUploadedImage(name || extracted || summary || '');
+            if (!started) {
+              pushSessionMessage('system', voiceLang === 'en'
+                ? 'Image has been saved as board-generation reference only.'
+                : '图片已作为“仅板书生成参考”保存。');
+            }
           } catch (e) {
             window.alert(e?.message || (voiceLang === 'en' ? 'Image recognition failed.' : '图片识别失败。'));
           }
@@ -4163,6 +4912,129 @@
         window.alert(voiceLang === 'en'
           ? 'Unsupported file type. Please upload .txt/.md or an image.'
           : '暂不支持该文件类型，请上传 .txt/.md 或图片文件。');
+      }
+
+      function hasFileTransfer(dataTransfer) {
+        if (!dataTransfer) return false;
+        const types = Array.isArray(dataTransfer.types) ? dataTransfer.types : Array.from(dataTransfer.types || []);
+        return types.includes('Files');
+      }
+
+      function getDroppedFiles(dataTransfer) {
+        if (!dataTransfer) return [];
+        const fromItems = Array.isArray(dataTransfer.items) ? dataTransfer.items : Array.from(dataTransfer.items || []);
+        const files = [];
+        fromItems.forEach((item) => {
+          if (!item || item.kind !== 'file') return;
+          const f = item.getAsFile ? item.getAsFile() : null;
+          if (f) files.push(f);
+        });
+        if (files.length) return files;
+        return Array.isArray(dataTransfer.files) ? dataTransfer.files : Array.from(dataTransfer.files || []);
+      }
+
+      function getPastedFiles(clipboardData) {
+        if (!clipboardData) return [];
+        const fromItems = Array.isArray(clipboardData.items) ? clipboardData.items : Array.from(clipboardData.items || []);
+        const files = [];
+        fromItems.forEach((item) => {
+          if (!item || item.kind !== 'file') return;
+          const f = item.getAsFile ? item.getAsFile() : null;
+          if (f) files.push(f);
+        });
+        if (files.length) return files;
+        return Array.isArray(clipboardData.files) ? clipboardData.files : Array.from(clipboardData.files || []);
+      }
+
+      function isSupportedDropFile(file) {
+        const f = file || {};
+        const name = (f.name || '').toString();
+        const type = (f.type || '').toString().toLowerCase();
+        const isImage = type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(name);
+        const isText = /^text\//.test(type) || /\.(txt|md)$/i.test(name);
+        return isImage || isText;
+      }
+
+      let chatDropDepth = 0;
+      const setChatDropActive = (active) => {
+        if (!chatDropZone) return;
+        chatDropZone.classList.toggle('is-dragover', !!active);
+      };
+
+      async function handleDroppedFiles(files) {
+        const list = Array.isArray(files) ? files.filter(Boolean).slice(0, 5) : [];
+        if (!list.length) return;
+        const supported = list.filter(isSupportedDropFile);
+        if (!supported.length) {
+          window.alert(voiceLang === 'en'
+            ? 'Unsupported file type. Please drop .txt/.md or image files.'
+            : '不支持该文件类型，请拖入 .txt/.md 或图片文件。');
+          return;
+        }
+        for (const file of supported) {
+          // kind 留空时由 handleChatUploadFile 按文件类型自动判断
+          await handleChatUploadFile(file, '');
+        }
+      }
+
+      async function handlePastedFiles(files) {
+        const list = Array.isArray(files) ? files.filter(Boolean).slice(0, 5) : [];
+        if (!list.length) return false;
+        const supported = list.filter(isSupportedDropFile);
+        if (!supported.length) {
+          window.alert(voiceLang === 'en'
+            ? 'Unsupported file type. Please paste image files or .txt/.md files.'
+            : '不支持该文件类型，请粘贴图片文件或 .txt/.md 文件。');
+          return true;
+        }
+        for (const file of supported) {
+          await handleChatUploadFile(file, '');
+        }
+        return true;
+      }
+
+      const onGlobalDragOver = (event) => {
+        if (!hasFileTransfer(event.dataTransfer)) return;
+        event.preventDefault();
+      };
+      const onGlobalDrop = (event) => {
+        if (!hasFileTransfer(event.dataTransfer)) return;
+        event.preventDefault();
+      };
+      document.addEventListener('dragover', onGlobalDragOver);
+      document.addEventListener('drop', onGlobalDrop);
+
+      if (chatDropZone) {
+        chatDropZone.addEventListener('dragenter', (event) => {
+          if (!hasFileTransfer(event.dataTransfer)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          chatDropDepth += 1;
+          setChatDropActive(true);
+        });
+        chatDropZone.addEventListener('dragover', (event) => {
+          if (!hasFileTransfer(event.dataTransfer)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+          setChatDropActive(true);
+        });
+        chatDropZone.addEventListener('dragleave', (event) => {
+          if (!hasFileTransfer(event.dataTransfer)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          chatDropDepth = Math.max(0, chatDropDepth - 1);
+          if (chatDropDepth === 0) setChatDropActive(false);
+        });
+        chatDropZone.addEventListener('drop', async (event) => {
+          if (!hasFileTransfer(event.dataTransfer)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          chatDropDepth = 0;
+          setChatDropActive(false);
+          const files = getDroppedFiles(event.dataTransfer);
+          await handleDroppedFiles(files);
+        });
       }
 
       if (uploadImageBtn && uploadImageInput) {
@@ -4224,13 +5096,6 @@
           cancelBlackboardEdit();
         });
       }
-      if (bbAddExampleBtn) {
-        bbAddExampleBtn.addEventListener('click', (event) => {
-          event.stopPropagation();
-          addBlackboardExampleItem();
-        });
-      }
-
       // Blackboard formatting toolbar (rich text)
       const formatToolbar = document.getElementById('bb-format-toolbar');
       const fontSizeSelect = document.getElementById('bb-font-size');
@@ -4339,9 +5204,6 @@
         });
       }
 
-      if (confirmYesBtn) confirmYesBtn.addEventListener('click', () => resolveConfirmGenerateDecision(true));
-      if (confirmNoBtn) confirmNoBtn.addEventListener('click', () => resolveConfirmGenerateDecision(false));
-      if (confirmCloseBtn) confirmCloseBtn.addEventListener('click', () => resolveConfirmGenerateDecision(false));
 
       document.addEventListener('pointerdown', (event) => {
         const toolbar = document.getElementById('selection-toolbar');
@@ -4425,6 +5287,7 @@
         }
         if (!session) return;
         sessionRuntime.replayLoaded = true;
+        sessionRuntime.replaySessionId = sessionParam;
 
         const wrapper = document.getElementById('main-wrapper');
         if (sessionParam && wrapper && !wrapper.classList.contains('is-split')) {
@@ -4452,6 +5315,8 @@
         if (session.board && typeof session.board === 'object') {
           renderBoard(session.board);
         }
+        // 仅打开历史课程查看、未做任何操作就关闭时，不应算作“有活动”，避免关闭时再次写入归档产生重复课程
+        sessionRuntime.hasActivity = false;
         } catch (e) {
         // ignore parse errors
       }

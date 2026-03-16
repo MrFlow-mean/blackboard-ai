@@ -172,7 +172,7 @@
               <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded-md">默认</span>
             </div>
             <!-- Add New -->
-            <button class="w-full bg-slate-50/50 border border-dashed border-slate-300 rounded-2xl p-4 flex items-center justify-center gap-2 text-sm font-medium text-slate-500 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50/30 transition-all active:scale-[0.98]">
+            <button id="add-payment-method-btn" type="button" class="w-full bg-slate-50/50 border border-dashed border-slate-300 rounded-2xl p-4 flex items-center justify-center gap-2 text-sm font-medium text-slate-500 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50/30 transition-all active:scale-[0.98]">
               <iconify-icon icon="lucide:plus"></iconify-icon>
               添加新付款方式
             </button>
@@ -417,7 +417,7 @@
           <span class="text-[10px] font-medium text-slate-400 group-hover:text-sky-500 transition-colors">首页</span>
         </a>
         <a href="course-workshop.html" id="nav-workshop" class="flex flex-col items-center gap-1 group w-16">
-          <img src="file:///C:/Users/h1101/.cursor/projects/c-Users-h1101-Desktop/assets/c__Users_h1101_AppData_Roaming_Cursor_User_workspaceStorage_1898921c4ac8d948b9ca74bbb6789f9b_images_image-accaa193-d3d2-4f85-844e-297cd4f2fb0f.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
+          <img src="./assets/icons/nav-workshop.png" class="w-7 h-7 nav-workshop-icon" alt="课程工坊">
           <span class="text-[10px] font-medium text-slate-400 group-hover:text-sky-500 transition-colors">课程工坊</span>
         </a>
         <a href="#" id="nav-settings" class="flex flex-col items-center gap-1 w-16">
@@ -430,5 +430,21 @@
     </nav>
 
   </div>
+  <script>
+    const addPaymentMethodBtn = document.getElementById('add-payment-method-btn');
+    if (addPaymentMethodBtn) {
+      addPaymentMethodBtn.addEventListener('click', function () {
+        const params = new URLSearchParams({
+          source: 'billing',
+          planName: 'Plus Plan',
+          amount: '150.00',
+          currency: 'CNY',
+          cycle: 'monthly'
+        });
+
+        window.location.href = `billing-payment-method.html?${params.toString()}`;
+      });
+    }
+  </script>
 </body>
 </html>

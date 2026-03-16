@@ -40,24 +40,34 @@ if (typeof fetchFn !== 'function') {
   }
 }
 
-// 加载 .env 文件
+// 加载 .env 文件（去除 \r，无效 key 视为未配置）
+function normalizeEnvValue(key, value) {
+  const v = (value || '').replace(/\r/g, '').trim();
+  if (key === 'OPENAI_API_KEY' && (v === 'sk-' || v.length < 20)) return '';
+  if (key === 'OPENROUTER_API_KEY' && (v === 'sk-or-' || v.length < 20)) return '';
+  return v;
+}
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
+  const envContent = fs.readFileSync(envPath, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   envContent.split('\n').forEach(line => {
     const trimmedLine = line.trim();
     if (trimmedLine && !trimmedLine.startsWith('#')) {
-      const [key, ...valueParts] = trimmedLine.split('=');
-      if (key && valueParts.length > 0) {
-        const value = valueParts.join('=').trim();
-        process.env[key.trim()] = value;
+      const eq = trimmedLine.indexOf('=');
+      if (eq > 0) {
+        const key = trimmedLine.slice(0, eq).trim();
+        const rawValue = trimmedLine.slice(eq + 1).trim();
+        const value = normalizeEnvValue(key, rawValue);
+        process.env[key] = value;
       }
     }
   });
   console.log('✅ 已加载 .env 文件');
 }
+// 强制覆盖：避免系统环境变量里残留 OPENAI_API_KEY=sk- 等无效值
+process.env.OPENAI_API_KEY = normalizeEnvValue('OPENAI_API_KEY', process.env.OPENAI_API_KEY || '');
 
-const PORT = 3002; // 使用不同的端口
+const PORT = Number(process.env.PORT) || 3002; // 云服务器请设置 PORT 或使用默认 3002
 const server = http.createServer((req, res) => {
   handleHttpRequest(req, res).catch((error) => {
     console.error('HTTP处理异常:', error);
@@ -71,18 +81,31 @@ function normalizeApiBase(apiBase) {
   return trimmed.replace(/\/v1$/i, '');
 }
 
+// 仅当 key 完整有效时才返回，否则返回 ''，避免把 "sk-" 发给 OpenAI
+function getValidOpenAIKey(key) {
+  const v = (key || '').toString().trim().replace(/\r/g, '');
+  if (!v || v === 'sk-' || v.length < 20) return '';
+  return v;
+}
+
+// 所有发往 OpenAI 的请求统一用此 key；无效则返回 ''，绝不返回 "sk-"
+function openAIKeyForRequest() {
+  return getValidOpenAIKey(process.env.OPENAI_API_KEY || '');
+}
+
 // OpenAI / OpenRouter API 配置
 const OPENAI_REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-4o-realtime-preview-2024-12-17';
 const OPENAI_API_BASE = normalizeApiBase(process.env.OPENAI_API_BASE || 'https://api.openai.com');
 const OPENAI_REALTIME_URL = process.env.OPENAI_REALTIME_URL || buildRealtimeUrl(OPENAI_API_BASE, OPENAI_REALTIME_MODEL);
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_API_KEY = openAIKeyForRequest();
 const OPENAI_STRUCTURE_MODEL = process.env.OPENAI_STRUCTURE_MODEL || 'gpt-4o-mini';
 const OPENAI_TEXT_MODEL = process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini';
 // Board model routing (PM subject_type -> board model)
 // - science (理科) => prefer o3 for structured reasoning
-// - humanities (文科) => prefer GPT-5.2 for richer narration/organization
+// - humanities (文科) => prefer GPT-5 for richer narration/organization
 const OPENAI_BOARD_MODEL_SCIENCE = process.env.OPENAI_BOARD_MODEL_SCIENCE || process.env.OPENAI_BOARD_MODEL_SCI || 'o3';
-const OPENAI_BOARD_MODEL_HUMANITIES = process.env.OPENAI_BOARD_MODEL_HUMANITIES || process.env.OPENAI_BOARD_MODEL_ART || 'gpt-5.2';
+const OPENAI_BOARD_MODEL_HUMANITIES = process.env.OPENAI_BOARD_MODEL_HUMANITIES || process.env.OPENAI_BOARD_MODEL_ART || 'gpt-5';
+const DEFAULT_INITIAL_SOLVE_COUNT = Math.max(1, Math.min(10, Number(process.env.BOARD_DEFAULT_INITIAL_SOLVE_COUNT) || 2));
 const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || OPENAI_TEXT_MODEL || 'gpt-4o-mini';
 const WEB_SEARCH_PROVIDER = (process.env.WEB_SEARCH_PROVIDER || 'duckduckgo').toString().trim().toLowerCase();
 const OPENAI_RESPONSES_URL = `${OPENAI_API_BASE}/v1/responses`;
@@ -178,6 +201,7 @@ function buildSessionUpdatePayload(config) {
 const BOARD_STORE = new Map();
 const BOARD_AUDIT_LOG = [];
 const ALLOWED_NODE_STATUS = new Set(['pending', 'teaching', 'done', 'skipped']);
+const PM_SUBJECT_TYPES = new Set(['science', 'humanities', 'mixed']);
 
 function clipText(value, max = 240) {
   const text = (value || '').toString().trim();
@@ -271,6 +295,92 @@ function buildSourceChunks(sources, locale = 'zh-CN') {
     });
   });
   return { sources: list, chunks };
+}
+
+function normalizeSubjectType(subjectType, fallback = 'mixed') {
+  const raw = (subjectType || '').toString().trim().toLowerCase();
+  if (PM_SUBJECT_TYPES.has(raw)) return raw;
+  if (fallback && PM_SUBJECT_TYPES.has(fallback)) return fallback;
+  return '';
+}
+
+function inferSubjectTypeFromText(input) {
+  const text = (input || '').toString().toLowerCase();
+  if (!text) return 'mixed';
+
+  const sciHits = (text.match(/数学|物理|化学|生物|工程|编程|算法|统计|微积分|代数|几何|概率|计算|推导|证明|python|java|javascript|react|node|sql|machine\s*learning|data\s*structure|science|stem|math|physics|chemistry|biology|coding|programming|algorithm|statistics/g) || []).length;
+  const humHits = (text.match(/语文|英语|日语|法语|德语|西班牙语|历史|文学|哲学|法学|政治|社会学|经济学|写作|阅读|翻译|humanities|language|history|literature|philosophy|law|politics|essay|translation/g) || []).length;
+
+  if (sciHits > humHits) return 'science';
+  if (humHits > sciHits) return 'humanities';
+  return 'mixed';
+}
+
+function routeBoardModelBySubjectType(subjectType) {
+  const safe = normalizeSubjectType(subjectType, 'mixed');
+  if (safe === 'science') return OPENAI_BOARD_MODEL_SCIENCE;
+  return OPENAI_BOARD_MODEL_HUMANITIES;
+}
+
+function buildBoardOnlyDigest(chunks, locale = 'zh-CN') {
+  const list = Array.isArray(chunks) ? chunks.slice(0, 12) : [];
+  if (!list.length) return '';
+  const lines = list.map((chunk, index) => {
+    const title = clipText(chunk?.source_title || chunk?.source_id || `source_${index + 1}`, 80);
+    const text = clipText(chunk?.text || '', 380);
+    if (!text) return '';
+    return `- ${title}: ${text}`;
+  }).filter(Boolean);
+  if (!lines.length) return '';
+  return locale === 'en'
+    ? `Board-only reference materials (for board generation only):\n${lines.join('\n')}`
+    : `仅供板书生成参考的图片/附件摘要（不要直接暴露给讲师）：\n${lines.join('\n')}`;
+}
+
+function hasPmSummaryPackage(pmSummaryBullets, learningSpec) {
+  const bullets = Array.isArray(pmSummaryBullets)
+    ? pmSummaryBullets.map((x) => clipText(x, 200)).filter(Boolean)
+    : [];
+  const spec = learningSpec && typeof learningSpec === 'object' ? learningSpec : null;
+  if (!spec) return false;
+  const topic = clipText(spec.topic, 220);
+  const goal = clipText(spec.goal, 420);
+  const subjectType = normalizeSubjectType(spec.subject_type, '');
+  return bullets.length > 0 && !!topic && !!goal && !!subjectType;
+}
+
+function evaluateLectureGate(board) {
+  const missing = [];
+  if (!board || typeof board !== 'object') {
+    missing.push('board_missing');
+    return {
+      ok: false,
+      missing,
+      message: '讲师启动被阻止：黑板不存在。'
+    };
+  }
+
+  const outline = Array.isArray(board.outline) ? board.outline : [];
+  const nodes = board.nodes && typeof board.nodes === 'object' ? board.nodes : null;
+  if (!outline.length || !nodes) missing.push('board_content_not_ready');
+
+  const pmBullets = Array.isArray(board.pm_summary_bullets) ? board.pm_summary_bullets : [];
+  const spec = board.learning_spec && typeof board.learning_spec === 'object' ? board.learning_spec : null;
+  if (!hasPmSummaryPackage(pmBullets, spec)) {
+    missing.push('pm_summary_not_ready');
+  }
+  if (board?.meta?.pm_ready_for_board !== true) {
+    missing.push('pm_ready_flag_missing');
+  }
+
+  if (missing.length) {
+    return {
+      ok: false,
+      missing,
+      message: '讲师启动被阻止：必须等待“项目经理总结完成 + 板书生成完成”后才能开始讲解。'
+    };
+  }
+  return { ok: true, missing: [], message: '' };
 }
 
 function buildFallbackTeachingGuide(board, chunkIds = [], locale = 'zh-CN') {
@@ -536,9 +646,8 @@ function looksLikeBase64(value) {
 }
 
 async function callOpenAIResponsesForVisionJson(systemPrompt, imageBase64, mimeType = 'image/png', locale = 'zh-CN') {
-  if (!OPENAI_API_KEY) {
-    throw new Error('未配置 OPENAI_API_KEY');
-  }
+  const key = openAIKeyForRequest();
+  if (!key) throw new Error('未配置 OPENAI_API_KEY');
   const safeB64 = normalizeBase64Input(imageBase64);
   if (!safeB64 || !looksLikeBase64(safeB64)) {
     throw new Error('图片 base64 数据无效');
@@ -549,7 +658,7 @@ async function callOpenAIResponsesForVisionJson(systemPrompt, imageBase64, mimeT
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${key}`
     },
     body: JSON.stringify({
       model: OPENAI_VISION_MODEL,
@@ -926,15 +1035,13 @@ function extractChatCompletionAudio(data) {
 }
 
 async function callOpenAIChatCompletion(messages, model = OPENAI_TEXT_MODEL, extraBody = {}) {
-  if (!OPENAI_API_KEY) {
-    throw new Error('未配置 OPENAI_API_KEY');
-  }
-
+  const key = openAIKeyForRequest();
+  if (!key) throw new Error('未配置 OPENAI_API_KEY');
   const response = await fetchFn(OPENAI_CHAT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${key}`
     },
     body: JSON.stringify({
       model,
@@ -964,6 +1071,8 @@ function shouldUseJsonResponseFormat(model) {
 }
 
 async function callOpenAIChatCompletionForJson(systemPrompt, userPrompt, model = OPENAI_TEXT_MODEL, extraBody = {}) {
+  const key = openAIKeyForRequest();
+  if (!key) throw new Error('未配置 OPENAI_API_KEY');
   const safeBody = extraBody && typeof extraBody === 'object' ? extraBody : {};
   const responseFormat = safeBody.response_format || (shouldUseJsonResponseFormat(model)
     ? { type: 'json_object' }
@@ -982,7 +1091,7 @@ async function callOpenAIChatCompletionForJson(systemPrompt, userPrompt, model =
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${key}`
     },
     body: JSON.stringify(body)
   });
@@ -1178,6 +1287,180 @@ function parseGoalSpec(goalText = '', locale = 'zh-CN') {
   };
 }
 
+function countIndexedProblemItems(text = '') {
+  const raw = (text || '').toString();
+  if (!raw) return 0;
+  const ids = new Set();
+  let match;
+
+  const bracketRe = /[（(]\s*(\d{1,3})\s*[）)]/g;
+  while ((match = bracketRe.exec(raw)) !== null) {
+    ids.add(String(match[1]));
+  }
+
+  const lineRe = /(?:^|\n)\s*(\d{1,3})\s*[).．、]/g;
+  while ((match = lineRe.exec(raw)) !== null) {
+    ids.add(String(match[1]));
+  }
+
+  return ids.size;
+}
+
+function resolveInitialSolveBatchSize(goalText = '') {
+  const raw = (goalText || '').toString();
+  if (!raw) return DEFAULT_INITIAL_SOLVE_COUNT;
+  const patterns = [
+    /(?:先(?:解|做|处理|完成|讲)|优先|默认先|first)\s*(?:前)?\s*(\d{1,2})\s*(?:道)?(?:题|questions?|problems?)/i,
+    /(?:前|first)\s*(\d{1,2})\s*(?:道)?(?:题|questions?|problems?)/i
+  ];
+  for (const re of patterns) {
+    const m = raw.match(re);
+    if (!m || !m[1]) continue;
+    const n = Number(m[1]);
+    if (Number.isFinite(n) && n > 0) {
+      return Math.max(1, Math.min(10, n));
+    }
+  }
+  return DEFAULT_INITIAL_SOLVE_COUNT;
+}
+
+function buildMathBatchSolveRequirements(goalText = '', locale = 'zh-CN') {
+  const text = (goalText || '').toString();
+  const solveIntent = /(解题|求解|求定义域|求值|求导|求积分|证明|计算|solve|problem|question|domain|derivative|integral|proof|compute)/i.test(text);
+  const indexedCount = countIndexedProblemItems(text);
+  if (!solveIntent && indexedCount < 2) return '';
+
+  const requestedBatch = resolveInitialSolveBatchSize(text);
+  const batch = Math.max(1, Math.min(requestedBatch, indexedCount > 0 ? indexedCount : requestedBatch));
+
+  if (locale === 'en') {
+    return [
+      'Math execution policy (hard rule):',
+      `- If this is a multi-problem sheet, solve ONLY the first ${batch} indexed problems in this turn.`,
+      '- Do NOT output any "input requirement checklist" asking the user to provide the original problem again.',
+      '- Add a dedicated "Problem checklist" node listing all detected item numbers and statuses (done/pending).',
+      '- Completed items must include condition extraction, key steps, and final answer.',
+      '- Remaining items must stay pending; do not fabricate full solutions for them in this turn.'
+    ].join('\n');
+  }
+
+  return [
+    '数学执行策略（硬规则）：',
+    `- 如果是多道编号小题，本轮只完成前${batch}题。`,
+    '- 禁止输出“输入需求清单/准备完成标志”这类索要题干的元内容，必须直接依据已给题干解题。',
+    '- 必须新增或维护「题目清单/进度清单」节点，列出所有题号并标记完成/待办。',
+    '- 已完成题必须给出：条件提取、关键步骤、最终结论。',
+    '- 未完成题保持待办，本轮禁止把后续题完整解完。'
+  ].join('\n');
+}
+
+function isMathSolveTaskText(text = '') {
+  const raw = (text || '').toString();
+  if (!raw) return false;
+  return /(解题|求解|定义域|值域|方程|不等式|求导|积分|证明|计算|题目|solve|domain|equation|inequality|derivative|integral|proof|compute|question)/i.test(raw);
+}
+
+function buildMathNoFluffRules(goalText = '', locale = 'zh-CN') {
+  if (!isMathSolveTaskText(goalText)) return '';
+  if (locale === 'en') {
+    return [
+      'Anti-fluff hard rules for math solving board:',
+      '- Keep only essential content: problem item, solving steps, final conclusion, pending checklist.',
+      '- Forbid meta sections such as "coverage type", "tools", "validation framework", "input checklist", "prep status".',
+      '- No long narrative prose. Each line should be a step or conclusion.',
+      '- For solved items, prefer 4-8 short lines per item.'
+    ].join('\n');
+  }
+  return [
+    '数学解题去废话硬规则：',
+    '- 板书只保留核心内容：题号、解题步骤、最终结论、待办清单。',
+    '- 禁止出现“覆盖类型/关键工具/结果校验/输入需求清单/准备完成标志/解析与输出约定”等模板段落。',
+    '- 禁止大段叙述性文字，每一行都应是步骤或结论。',
+    '- 已完成题每题优先控制在 4-8 行短步骤。'
+  ].join('\n');
+}
+
+function isMathFluffLine(line = '') {
+  const text = (line || '').toString().trim();
+  if (!text) return false;
+  return /(覆盖类型|解题结构|关键工具|结果校验|快速核对|输入需求清单|准备完成标志|解析与输出约定|示例\/对话\/练习|今天我们要学习|在我们开始解题之前|让我们进入题目分析阶段|你们是否有任何问题|coverage type|solution structure|key tools?|validation framework|input checklist|prep status|output convention|example\/dialogue\/exercise|before we start|let us enter analysis)/i.test(text);
+}
+
+function isLikelyMathSolveLine(line = '') {
+  const text = (line || '').toString().trim();
+  if (!text) return false;
+
+  if (/^(题目清单|进度清单|problem checklist|pending|done|待办|已完成)/i.test(text)) return true;
+  if (/^(步骤?\s*\d+|step\s*\d+|第\s*\d+\s*步|\d+[).、]|[（(]\d+[）)]|第\s*\d+\s*题|题\s*\d+)/i.test(text)) return true;
+  if (/[=<>≤≥√∈±∞]/.test(text)) return true;
+  if (/(定义域|值域|方程|不等式|分母|分子|根号|取值范围|解得|所以|因此|结论|答案|验算|domain|equation|inequality|solve|answer|conclusion|check|verify)/i.test(text)) return true;
+  if (/(sin|cos|tan|ln|log|arcsin|arccos|arctan|π)/i.test(text)) return true;
+  if (/\d/.test(text) && /[xy]/i.test(text)) return true;
+  if (/^[-*•]\s+/.test(text) && (/[=<>≤≥√∈±∞]/.test(text) || /(定义域|值域|方程|不等式|结论|答案|domain|answer|conclusion)/i.test(text))) return true;
+  return false;
+}
+
+function compactMathSolveTextBlock(text = '', locale = 'zh-CN') {
+  const raw = (text || '').toString().replace(/\r\n?/g, '\n');
+  if (!raw.trim()) return '';
+  const lines = raw.split('\n');
+  const kept = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (kept.length && kept[kept.length - 1] !== '') kept.push('');
+      continue;
+    }
+    if (isMathFluffLine(trimmed)) continue;
+    if (trimmed.length > 120 && !isLikelyMathSolveLine(trimmed)) continue;
+    if (!isLikelyMathSolveLine(trimmed) && /^(首先|其次|另外|同时|最后|例如|我们|因此我们|first|next|also|finally|for example|we )/i.test(trimmed)) continue;
+    kept.push(trimmed);
+  }
+
+  let result = kept.join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  if (!result) {
+    // Last-resort fallback: keep the first few non-fluff lines.
+    const fallback = lines
+      .map(line => (line || '').toString().trim())
+      .filter(Boolean)
+      .filter(line => !isMathFluffLine(line))
+      .slice(0, 8);
+    result = fallback.join('\n').trim();
+  }
+
+  return clipText(result, 3200);
+}
+
+function compactMathSolveBoard(board, goalText, locale = 'zh-CN') {
+  if (!board || typeof board !== 'object') return board;
+  if (!isMathSolveTaskText(goalText || board.goal || '')) return board;
+
+  const next = JSON.parse(JSON.stringify(board));
+  const outline = Array.isArray(next.outline) ? next.outline : [];
+  const nodes = next.nodes && typeof next.nodes === 'object' ? next.nodes : {};
+
+  outline.forEach((item) => {
+    const nodeId = item?.id;
+    if (!nodeId || !nodes[nodeId] || typeof nodes[nodeId] !== 'object') return;
+    const node = nodes[nodeId];
+    const compactedContent = compactMathSolveTextBlock(node.content || '', locale);
+    node.content = compactedContent || (locale === 'en' ? 'Pending: continue solving by item.' : '待办：按题号继续解题。');
+    if (Array.isArray(node.examples)) {
+      node.examples = node.examples
+        .map(ex => compactMathSolveTextBlock(ex, locale))
+        .filter(Boolean)
+        .slice(0, 12);
+    }
+  });
+
+  next.nodes = nodes;
+  return next;
+}
+
 function buildMathTopicRequirements(goalText = '', locale = 'zh-CN') {
   const text = (goalText || '').toString();
   const isHyperbola = /双曲线|hyperbola/i.test(text);
@@ -1244,6 +1527,7 @@ function looksLikeBadBoardPayload(rawBoard, goalText, domain, locale = 'zh-CN') 
   if (/(https?:\/\/|example\.com)/i.test(text)) return true;
 
   if (domain === 'math') {
+    if (/(覆盖类型|解题结构|关键工具|结果校验|快速核对|输入需求清单|准备完成标志|解析与输出约定|示例\/对话\/练习|coverage type|solution structure|key tools?|validation framework|input checklist|prep status|output convention|example\/dialogue\/exercise)/i.test(text)) return true;
     // 明显元内容：提示词/模型/JSON/schema 等
     if (/(prompt|schema|json|model|llm|openai|chatgpt|gemini)/i.test(text)) return true;
     if (/(提示词|模型|大模型|json|schema|格式|模板|领域)/.test(text)) return true;
@@ -1262,6 +1546,23 @@ function looksLikeBadBoardPayload(rawBoard, goalText, domain, locale = 'zh-CN') 
     const metaHits = (text.match(/(板书用|板书要|硬规则|强约束|模板|领域|排版|格式|短句|分段|怎么写|写板书)/g) || []).length;
     const mathSignalHits = (text.match(/(双曲线|方程|焦点|渐近线|离心率|顶点|实轴|虚轴|x\^2|y\^2|a\^2|b\^2|c\^2|=|±)/ig) || []).length;
     if (metaHits >= 2 && mathSignalHits <= 2) return true;
+
+    // 题单型任务：必须有题号清单与待办进度，避免退化成泛化模板
+    const indexedCountInGoal = countIndexedProblemItems(goalText || '');
+    if (indexedCountInGoal >= 3) {
+      const checklistHits = (text.match(/(题目清单|进度清单|problem checklist|pending|待办|已完成|done)/ig) || []).length;
+      if (checklistHits === 0) return true;
+    }
+
+    // 拒绝空泛“流程模板”板书（与具体题干脱节）
+    const genericTemplateHits = (text.match(/(例题演示|规范步骤|步骤1审题|步骤2设元|步骤3推导|步骤4结论|步骤5检查|版式|每步只做一件事|输入需求清单|准备完成标志|获取题目原文与约束|解析与输出约定)/g) || []).length;
+    const concreteSolveHits = (text.match(/(定义域|值域|不等式|方程|x∈|x≥|x≤|sin|cos|tan|ln|arcsin|√|根号|\(1\)|（1）|\(2\)|（2）)/ig) || []).length;
+    if (genericTemplateHits >= 4 && concreteSolveHits <= 3) return true;
+    const nonEmptyLines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    if (nonEmptyLines.length >= 6) {
+      const likelyMathLines = nonEmptyLines.filter(isLikelyMathSolveLine).length;
+      if (likelyMathLines / nonEmptyLines.length < 0.35) return true;
+    }
 
     // 双曲线：必须有标准方程/渐近线等关键词
     if (/双曲线|hyperbola/i.test(goalText || '')) {
@@ -1315,7 +1616,7 @@ function normalizeBoardPayload(rawBoard, goal, locale = 'zh-CN') {
   const masteryScore = Number.isFinite(masteryScoreRaw) ? Math.max(0, Math.min(100, masteryScoreRaw)) : 0;
   const now = new Date().toISOString();
 
-  return {
+  const normalizedBoard = {
     board_id: crypto.randomUUID(),
     goal: clipText(safe.goal, 120) || deriveBoardTitleFromGoal(goal, locale) || fallback.goal,
     outline: normalizedOutline,
@@ -1323,6 +1624,7 @@ function normalizeBoardPayload(rawBoard, goal, locale = 'zh-CN') {
     progress: { current_node_id: currentNodeId, mastery_score: masteryScore },
     meta: { source: 'model', created_at: now, updated_at: now }
   };
+  return compactMathSolveBoard(normalizedBoard, goal, locale);
 }
 
 function buildBoardSnapshotForDraft(board, locale = 'zh-CN') {
@@ -1472,6 +1774,9 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
     }).join('\n\n')
     : '';
 
+  // 当前节点是否为“课文原文/完整对话”类：外语讲解时应逐句读原文再讲解
+  const isLessonTextNode = /课文原文|完整对话|完整情景对话|阅读课文|情景对话原文/i.test(currentNodeTitle || '');
+
   if (locale === 'en') {
     return [
       'You are Blackboard AI Realtime Teaching Agent.',
@@ -1493,10 +1798,14 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
       '- Attention constraint applies to external materials only: you MUST ONLY cite from the provided "Allowed Sources" when quoting the user\'s uploaded documents. If more context is needed, ask the user to select text and expand attention scope.',
       '- If the learner asks whether you can see their latest blackboard edits, answer clearly: yes, you can see the latest current node content provided above, then teach based on it.',
       '- Ask 1-3 short questions per turn (check understanding / guided practice).',
-      '- Teaching style: do NOT read the board verbatim. Use it as outline, explain naturally.',
+      isLessonTextNode
+        ? '- Teaching style (lesson-text node): Go sentence by sentence. For each sentence: (1) read the original foreign-language sentence aloud, (2) then explain it (meaning, usage, or culture note). Do not read the whole passage first and then explain at the end.'
+        : '- Teaching style: do NOT read the board verbatim. Use it as outline, explain naturally.',
       '- Each turn focus on ONE key point: meaning/why, a tiny example or a step, then one short question.',
       '- If user is wrong: point out the issue, give a hint, let them retry (no full answer dump).',
-      '- You may cite key formulas/keywords but avoid long verbatim board text.',
+      isLessonTextNode
+        ? '- You may read aloud and quote the lesson text sentence by sentence; after each sentence give a brief explanation.'
+        : '- You may cite key formulas/keywords but avoid long verbatim board text.',
       '- Do NOT output LaTeX (no $$, \\(...\\), \\frac, \\int). Use plain-text math or Unicode symbols.',
       '- You MAY quote short sentences from "Allowed Sources" when needed (1-3 lines). Do NOT paste long passages or the entire document.',
       guideRules.length ? 'Teaching guide rules:' : '',
@@ -1505,7 +1814,7 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
       clippedSources || '',
       guideScriptText ? 'Teaching script (follow but keep natural):' : '',
       guideScriptText || '',
-      'Board key points (do not read verbatim):',
+      isLessonTextNode ? 'Lesson text (read each sentence aloud, then explain it):' : 'Board key points (do not read verbatim):',
       nodeDetails,
       ...hiddenDraftBlock
     ].filter(Boolean).join('\n');
@@ -1531,10 +1840,14 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
     '- 注意力约束只针对“材料/原文”：你只能引用“允许引用范围（Allowed Sources）”里的材料片段。若用户需要更多原文，请引导其在材料区框选并点击“增加讲师注意力篇幅”，下一轮才可引用新增片段。',
     '- 若学习者问“你能否看到我刚编辑/新增的黑板内容”，请明确回答：能看到（你已获得当前节点最新正文），然后围绕新增内容继续讲解。',
     '- 教学阶段每轮最多提出 1–3 个问题（用于检查理解/引导练习）。',
-    '- 教学风格：不要逐字念板书。把板书当成“提纲”，用更口语、更解释性的方式讲清楚。',
+    isLessonTextNode
+      ? '- 教学风格（课文原文/对话节点）：逐句进行。每句先朗读外语原文，再对该句做讲解（释义、用法或文化点），然后进入下一句；不要一次性读完整个课文再统一讲解。'
+      : '- 教学风格：不要逐字念板书。把板书当成“提纲”，用更口语、更解释性的方式讲清楚。',
     '- 每轮尽量只讲 1 个关键点：解释含义/为什么、给一个微型例子或一步推导/解题思路，然后提出 1 个简短问题等待用户回答。',
     '- 若用户回答不对：先指出错在何处，再给提示让他重试，而不是直接抛出完整答案。',
-    '- 你可以引用板书中的关键公式/词汇，但不要大段复述板书正文。',
+    isLessonTextNode
+      ? '- 当前节点为课文原文：可以逐句朗读原文，每句读完后做简短讲解。'
+      : '- 你可以引用板书中的关键公式/词汇，但不要大段复述板书正文。',
     '- 不要输出 LaTeX/公式源码（如 $$、\\(\\)、\\frac、\\int），用普通文本或 Unicode 数学符号表达。',
     '- 允许在需要时引用“允许引用范围（Allowed Sources）”内的短句（1–3 行），但禁止粘贴整段长文/全文。',
     guideRules.length ? '教案规则：' : '',
@@ -1543,7 +1856,7 @@ function buildTeachingInstructionsFromBoard(board, locale = 'zh-CN') {
     clippedSources || '',
     guideScriptText ? '讲解脚本（按节点推进，保持自然口语）：' : '',
     guideScriptText || '',
-    '黑板要点（不要逐字朗读，仅用于对齐讲解）：',
+    isLessonTextNode ? '课文原文（请逐句朗读后再讲解该句）：' : '黑板要点（不要逐字朗读，仅用于对齐讲解）：',
     nodeDetails,
     ...hiddenDraftBlock
   ].filter(Boolean).join('\n');
@@ -1598,11 +1911,12 @@ async function callResponsesApiForJson(systemPrompt, userPrompt, options = {}) {
       finalOptions[key] = value;
     });
 
+    const reqKey = openAIKeyForRequest();
     const resp = await fetchFn(OPENAI_RESPONSES_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${reqKey}`
       },
       body: JSON.stringify({
         model,
@@ -1622,13 +1936,14 @@ async function callResponsesApiForJson(systemPrompt, userPrompt, options = {}) {
   } else {
     // OpenRouter: options 仅透传 temperature 等常见字段
     const safeOptions = options && typeof options === 'object' ? options : {};
-    const { temperature } = safeOptions;
+    const { model: modelOverride, temperature } = safeOptions;
+    const model = clipText(modelOverride, 80) || OPENROUTER_STRUCTURE_MODEL;
     text = await callOpenRouterChatCompletion(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      OPENROUTER_STRUCTURE_MODEL,
+      model,
       {
         temperature: Number.isFinite(Number(temperature)) ? Number(temperature) : 0.2
       }
@@ -1683,6 +1998,7 @@ async function callResponsesApiForText(systemPrompt, userPrompt, options = {}) {
   let text = '';
 
   if (OPENAI_API_KEY) {
+    const reqKey = openAIKeyForRequest();
     const safeOptions = options && typeof options === 'object' ? options : {};
     const { model: modelOverride, ...restOptions } = safeOptions;
     const model = clipText(modelOverride, 80) || OPENAI_STRUCTURE_MODEL;
@@ -1699,7 +2015,7 @@ async function callResponsesApiForText(systemPrompt, userPrompt, options = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${reqKey}`
       },
       body: JSON.stringify({
         model,
@@ -1767,7 +2083,7 @@ Blackboard style hard rules:
 Domain (hard): ${domain.toUpperCase()}
 Domain hard rules:
 - If domain is MATH: do NOT generate any dialogues / vocabulary lists. Use math board template below.
-- If domain is LANGUAGE: include one node titled "Lesson text / Full dialogue" and put the full text in node.content with clear line breaks (roles/paragraphs). Other nodes: vocab, grammar, drills.
+- If domain is LANGUAGE: include one node titled "Lesson text / Full dialogue" and put the full text in node.content with clear line breaks (roles/paragraphs). The dialogue/reading passage in that node MUST be written entirely in the language the user is learning: if they are learning English use English, if French use French, if Chinese use Chinese, etc. Use only that target language for the lesson text. Other nodes: vocab, grammar, drills (explanations may be in the interface language).
 - If domain is GENERAL: use concise conceptual outline + example + checklist.
 Templates:
 - Math / geometry / conic sections: use nodes like (1) Core definitions & parameters (2) Standard equations (3) Key geometric properties (4) Common problem types + 1-3 examples (5) Common mistakes / quick checklist.
@@ -1775,6 +2091,8 @@ Math board requirement:
 - Your output MUST look like concise textbook-style blackboard notes: short bullets, headings, compact formulas.
 - No tangents. No "physics thoughts". No long paragraphs. No story.
 ${buildMathTopicRequirements(goal, 'en')}
+${buildMathBatchSolveRequirements(goal, 'en')}
+${buildMathNoFluffRules(goal, 'en')}
 Goal (topic + level + constraints):
 Topic: ${spec.topic}
 Level: ${spec.level || 'unknown'}
@@ -1802,11 +2120,13 @@ ${(spec.notes || []).map(x => `- ${x}`).join('\n') || '- none'}`
 领域（强约束）：${domain === 'math' ? '数学' : (domain === 'language' ? '语言学习' : '通用')}
 领域硬规则：
 - 若为【数学】：严禁输出对话/词汇表/课文；按“教辅讲义式板书笔记”编排：标题 + 要点 + 公式；禁止“物理思考”之类发散；每个节点最多 8–12 行短要点。
-- 若为【语言学习】：必须包含一个节点标题含「课文原文/完整对话」，把完整原文写在 node.content（分角色/分段换行）；其他节点写词汇/语法/练习。
+- 若为【语言学习】：必须包含一个节点标题含「课文原文/完整对话」，把完整原文写在 node.content（分角色/分段换行）。**课文原文/对话只用用户指定要学习的语言书写**：用户要学英文就生成英文课文，要学法语就生成法语课文，要学中文就生成中文课文，要学日语就生成日语课文，以此类推。其余节点写词汇/语法/练习，讲解可用界面语言。
 - 若为【通用】：用精炼大纲 + 例子 + checklist。
 模板建议：
 - 数学/几何/圆锥曲线：建议节点为「核心定义与参数」「标准方程」「几何性质（顶点/焦点/渐近线等）」「常见题型+例题」「易错点/速记清单」。
-- 语言课文/对话：必须包含一个节点标题含「课文原文/完整对话」，把完整原文写在 node.content（分角色/分段换行），其余节点写词汇/语法/练习。
+- 语言课文/对话：必须包含一个节点标题含「课文原文/完整对话」，**该节点 content 只用用户要学的那门语言写**（学英用英、学法用法、学中用中、学日用日等）；其余节点写词汇/语法/练习。
+${buildMathBatchSolveRequirements(goal, 'zh-CN')}
+${buildMathNoFluffRules(goal, 'zh-CN')}
 目标（主题 + 水平 + 约束）：
 主题：${spec.topic}
 水平：${spec.level || '不详'}
@@ -1881,6 +2201,20 @@ function buildFallbackPatch(board, userInput, locale = 'zh-CN') {
     return { operations: ops, rationale: locale === 'en' ? 'User requests more exercises; append to current node examples.' : '用户要求补充例题/练习，追加到当前节点示例中。' };
   }
 
+  if (/解题|求解|定义域|求值|求导|证明|计算|solve|domain|derivative|proof|compute/.test(text)) {
+    const batch = resolveInitialSolveBatchSize(userInput);
+    const node = board.nodes[currentNodeId];
+    const hint = locale === 'en'
+      ? `Execution policy: for multi-problem sheets, solve first ${batch} indexed problems now and keep the rest pending.`
+      : `执行策略：若是多道编号题，本轮先解前${batch}题，其余保持待办。`;
+    ops.push({
+      op: 'update_node',
+      node_id: currentNodeId,
+      content: `${node?.content || ''}\n${hint}\n${clipText(userInput, 360)}`
+    });
+    return { operations: ops, rationale: locale === 'en' ? 'User requests direct solving; prioritize concrete solving updates.' : '用户要求直接解题，优先把具体解题策略写入当前节点。' };
+  }
+
   if (/下一章|下一节|next|move on/.test(text)) {
     ops.push({ op: 'set_current_node', node_id: nextNodeId });
     return { operations: ops, rationale: locale === 'en' ? 'User requests next section.' : '用户要求进入下一章节。' };
@@ -1932,6 +2266,17 @@ function normalizePatch(rawPatch) {
 async function generateBoardPatch(board, userInput, locale = 'zh-CN') {
   const fallback = buildFallbackPatch(board, userInput, locale);
   if (!OPENAI_API_KEY && !OPENROUTER_API_KEY) return fallback;
+  const routedSubjectType = normalizeSubjectType(
+    board?.learning_spec?.subject_type,
+    inferSubjectTypeFromText([
+      board?.goal || '',
+      board?.learning_spec?.topic || '',
+      board?.learning_spec?.goal || '',
+      userInput || ''
+    ].filter(Boolean).join('\n'))
+  );
+  const routedBoardModel = routeBoardModelBySubjectType(routedSubjectType);
+  const patchGoalContext = [board?.goal || '', userInput || ''].filter(Boolean).join('\n');
 
   const systemPrompt = locale === 'en'
     ? 'You are Blackboard Architect Agent for board updates. Return strict JSON only.'
@@ -1957,7 +2302,7 @@ Rules:
 - Do NOT add tangents (e.g., physics analogies) unless user explicitly asks.
 - Do NOT add greetings / teacher speeches / disclaimers.
 - Do NOT output LaTeX. Use plain-text math or Unicode symbols.
-- If user asks to "generate lesson text / full dialogue / reading passage", create a dedicated node and put the full text into node.content with clear line breaks.
+- If user asks to "generate lesson text / full dialogue / reading passage", create a dedicated node and put the full text into node.content with clear line breaks. The text MUST be in the language the user is learning (e.g. English if learning English, French if learning French, Chinese if learning Chinese).
 - If you add a new "lesson text" node, set it as current node (set_current_node) and status teaching.`
     : `当前黑板：
 ${JSON.stringify(stripHiddenDraft(board))}
@@ -1979,10 +2324,16 @@ ${userInput}
 - 不要跨学科发散（例如物理类类比）除非用户明确要求。
 - 不要写同学们好/老师讲话/免责声明等口语与套话。
 - 不要输出 LaTeX/公式源码，用普通文本或 Unicode 数学符号表达。
-- 若用户要求“生成课文/完整对话/阅读原文”，请新增一个专门节点，把完整原文写进 node.content（分角色/分段换行）。
+- 若用户要求“生成课文/完整对话/阅读原文”，请新增一个专门节点，把完整原文写进 node.content（分角色/分段换行）。**该原文只用用户指定要学习的语言书写**：用户要学英文就生成英文课文，要学法语就生成法语课文，要学中文就生成中文课文，以此类推。
 - 若新增“课文原文”节点，请把它设为当前讲解节点（set_current_node）并置为 teaching。`;
+  const noFluffRules = buildMathNoFluffRules(patchGoalContext, locale);
+  const constrainedUserPrompt = noFluffRules ? `${userPrompt}\n${noFluffRules}` : userPrompt;
   try {
-    const raw = await callResponsesApiForJson(systemPrompt, userPrompt);
+    const result = await callStructuredJsonWithFallback(systemPrompt, constrainedUserPrompt, {
+      model: routedBoardModel,
+      temperature: 0.2
+    });
+    const raw = result.raw;
     const patch = normalizePatch(raw);
     return patch.operations.length ? patch : fallback;
   } catch (error) {
@@ -1991,7 +2342,7 @@ ${userInput}
   }
 }
 
-function applyPatchToBoard(board, patch) {
+function applyPatchToBoard(board, patch, locale = 'zh-CN') {
   const next = JSON.parse(JSON.stringify(board));
   const outlineById = new Map(next.outline.map(item => [item.id, item]));
   const applied = [];
@@ -2086,9 +2437,10 @@ function applyPatchToBoard(board, patch) {
     if (active) active.status = 'teaching';
   }
 
-  if (!next.meta || typeof next.meta !== 'object') next.meta = {};
-  next.meta.updated_at = new Date().toISOString();
-  return { board: next, applied };
+  const compactedBoard = compactMathSolveBoard(next, next.goal || board?.goal || '', locale);
+  if (!compactedBoard.meta || typeof compactedBoard.meta !== 'object') compactedBoard.meta = {};
+  compactedBoard.meta.updated_at = new Date().toISOString();
+  return { board: compactedBoard, applied };
 }
 
 function toPublicBoard(board) {
@@ -2197,38 +2549,98 @@ async function handleHttpRequest(req, res) {
     // 允许更长的澄清信息（学习目标 + 水平 + 约束），避免过早截断影响板书生成质量
     const goal = clipText(body.goal || body.user_input, 2400);
     const rawSources = body.sources || body.source || body.materials || null;
+    const rawBoardOnlySources = body.board_only_sources || body.board_only_source || body.board_only_materials || null;
     const pmSummaryBullets = Array.isArray(body.pm_summary_bullets) ? body.pm_summary_bullets : [];
-    const learningSpec = body.learning_spec && typeof body.learning_spec === 'object' ? body.learning_spec : null;
+    const learningSpecInput = body.learning_spec && typeof body.learning_spec === 'object' ? body.learning_spec : null;
+    const pmReadyForBoard = body.pm_ready_for_board === true;
     const bodyLocale = body.locale === 'en' ? 'en' : locale;
     if (!goal) {
       sendJson(res, 400, { ok: false, message: 'goal 不能为空' });
       return;
     }
+
+    const normalizedPmBullets = pmSummaryBullets
+      .map(x => clipText(x, 200))
+      .filter(Boolean)
+      .slice(0, 10);
+
+    const learningSpec = learningSpecInput
+      ? {
+        ...learningSpecInput,
+        topic: clipText(learningSpecInput.topic, 220),
+        goal: clipText(learningSpecInput.goal, 420),
+        level: clipText(learningSpecInput.level, 120),
+        preferred_style: clipText(learningSpecInput.preferred_style, 120),
+        materials_summary: clipText(learningSpecInput.materials_summary, 900),
+        constraints: Array.isArray(learningSpecInput.constraints)
+          ? learningSpecInput.constraints.map(x => clipText(x, 160)).filter(Boolean).slice(0, 10)
+          : [],
+        subject_type: normalizeSubjectType(
+          learningSpecInput.subject_type,
+          inferSubjectTypeFromText([
+            goal,
+            clipText(learningSpecInput.topic, 220),
+            clipText(learningSpecInput.goal, 420),
+            clipText(learningSpecInput.materials_summary, 900)
+          ].filter(Boolean).join('\n'))
+        )
+      }
+      : null;
+
+    const missing = [];
+    if (!pmReadyForBoard) missing.push('pm_ready_for_board');
+    if (!normalizedPmBullets.length) missing.push('pm_summary_bullets');
+    if (!learningSpec) {
+      missing.push('learning_spec');
+    } else {
+      if (!learningSpec.topic) missing.push('learning_spec.topic');
+      if (!learningSpec.goal) missing.push('learning_spec.goal');
+    }
+    if (missing.length) {
+      sendJson(res, 409, {
+        ok: false,
+        code: 'PM_SUMMARY_REQUIRED',
+        missing,
+        message: '必须先完成项目经理需求总结，再生成板书并启动讲师。'
+      });
+      return;
+    }
+
     const { sources: normalizedSources, chunks } = buildSourceChunks(rawSources, bodyLocale);
-    const rawSubjectType = (learningSpec?.subject_type || body.subject_type || '').toString().trim().toLowerCase();
-    const subjectType = (rawSubjectType === 'science' || rawSubjectType === 'humanities' || rawSubjectType === 'mixed')
-      ? rawSubjectType
-      : '';
-    const boardModel = subjectType === 'science'
-      ? OPENAI_BOARD_MODEL_SCIENCE
-      : (subjectType === 'humanities' || subjectType === 'mixed')
-        ? OPENAI_BOARD_MODEL_HUMANITIES
-        : null;
-    const board = await generateBoard(goal, bodyLocale, boardModel);
+    const { sources: boardOnlySources, chunks: boardOnlyChunks } = buildSourceChunks(rawBoardOnlySources, bodyLocale);
+
+    const inferredSubjectType = normalizeSubjectType(
+      learningSpec?.subject_type || body.subject_type,
+      inferSubjectTypeFromText([
+        goal,
+        normalizedPmBullets.join('\n'),
+        (learningSpec?.topic || ''),
+        (learningSpec?.goal || '')
+      ].filter(Boolean).join('\n'))
+    );
+    const boardModel = routeBoardModelBySubjectType(inferredSubjectType);
+    const boardOnlyDigest = buildBoardOnlyDigest(boardOnlyChunks, bodyLocale);
+    const boardGoalForGeneration = boardOnlyDigest ? `${goal}\n\n${boardOnlyDigest}` : goal;
+
+    const board = await generateBoard(boardGoalForGeneration, bodyLocale, boardModel);
+    board.goal = goal;
     const hiddenDraft = await generateHiddenDraft(board, bodyLocale);
     if (hiddenDraft) {
       board.hidden_draft = hiddenDraft;
     }
     board.sources = normalizedSources;
     board.sources_chunks = chunks;
-    board.pm_summary_bullets = pmSummaryBullets
-      .map(x => clipText(x, 200))
-      .filter(Boolean)
-      .slice(0, 10);
-    board.learning_spec = learningSpec;
+    board.pm_summary_bullets = normalizedPmBullets;
+    board.learning_spec = {
+      ...learningSpec,
+      subject_type: inferredSubjectType
+    };
     board.meta = board.meta || {};
-    if (subjectType) board.meta.pm_subject_type = subjectType;
-    if (boardModel) board.meta.board_model_routed = boardModel;
+    board.meta.pm_ready_for_board = true;
+    board.meta.pm_subject_type = inferredSubjectType;
+    board.meta.board_model_routed = boardModel;
+    if (boardOnlySources.length) board.meta.board_only_sources_count = boardOnlySources.length;
+    if (boardOnlyChunks.length) board.meta.board_only_chunks_count = boardOnlyChunks.length;
     const selected = await selectInitialAttentionChunks(goal, chunks, bodyLocale);
     const allowedChunkIds = Array.isArray(selected?.chunk_ids) ? selected.chunk_ids : [];
     board.attention_scope = {
@@ -2420,7 +2832,7 @@ async function handleHttpRequest(req, res) {
     }
 
     const patch = await generateBoardPatch(board, userInput, bodyLocale);
-    const { board: updatedBoard, applied } = applyPatchToBoard(board, patch);
+    const { board: updatedBoard, applied } = applyPatchToBoard(board, patch, bodyLocale);
     const hiddenDraft = await generateHiddenDraft(updatedBoard, bodyLocale);
     if (hiddenDraft) {
       updatedBoard.hidden_draft = hiddenDraft;
@@ -2492,7 +2904,7 @@ async function handleHttpRequest(req, res) {
       ]
     };
 
-    const { board: updatedBoard, applied } = applyPatchToBoard(board, patch);
+    const { board: updatedBoard, applied } = applyPatchToBoard(board, patch, bodyLocale);
     if (!updatedBoard.nodes[nodeId]) updatedBoard.nodes[nodeId] = { content: '', examples: [] };
     updatedBoard.nodes[nodeId].examples = examples;
     const hiddenDraft = await generateHiddenDraft(updatedBoard, bodyLocale);
@@ -2527,6 +2939,22 @@ async function handleHttpRequest(req, res) {
     const userText = clipText(body.text || body.user_input, 3000);
     const boardId = clipText(body.board_id, 80);
     const board = boardId ? BOARD_STORE.get(boardId) : null;
+    if (boardId && !board) {
+      sendJson(res, 404, { ok: false, message: 'board 不存在' });
+      return;
+    }
+    if (boardId) {
+      const gate = evaluateLectureGate(board);
+      if (!gate.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: 'LECTURE_GATE_NOT_READY',
+          message: gate.message,
+          missing: gate.missing
+        });
+        return;
+      }
+    }
     const instructions = board ? buildTeachingInstructionsFromBoard(board, locale) : DEFAULT_INSTRUCTIONS;
 
     if (!userText) {
@@ -2577,19 +3005,39 @@ async function handleHttpRequest(req, res) {
 
   if (req.method === 'POST' && url.pathname === '/get-realtime-token') {
     const body = await parseBody(req);
-    if (!OPENAI_API_KEY) {
+    const tokenKey = getValidOpenAIKey(OPENAI_API_KEY);
+    if (!tokenKey) {
       if (OPENROUTER_API_KEY) {
         sendJson(res, 400, {
           ok: false,
           message: '已配置 OPENROUTER_API_KEY，但 Realtime 语音令牌仅支持 OPENAI_API_KEY'
         });
       } else {
-        sendJson(res, 500, { ok: false, message: '未配置 OPENAI_API_KEY' });
+        sendJson(res, 500, {
+          ok: false,
+          message: '未配置有效的 OPENAI_API_KEY。请在 backend/.env 中填写完整密钥（从 https://platform.openai.com/account/api-keys 获取），并重启后端。'
+        });
       }
       return;
     }
     const boardId = clipText(body.board_id, 80);
     const board = boardId ? BOARD_STORE.get(boardId) : null;
+    if (boardId && !board) {
+      sendJson(res, 404, { ok: false, message: 'board 不存在' });
+      return;
+    }
+    if (boardId) {
+      const gate = evaluateLectureGate(board);
+      if (!gate.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: 'LECTURE_GATE_NOT_READY',
+          message: gate.message,
+          missing: gate.missing
+        });
+        return;
+      }
+    }
     const instructions = board ? buildTeachingInstructionsFromBoard(board, locale) : DEFAULT_INSTRUCTIONS;
 
     try {
@@ -2597,7 +3045,7 @@ async function handleHttpRequest(req, res) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Authorization': `Bearer ${tokenKey}`
         },
         body: JSON.stringify({
           model: OPENAI_REALTIME_MODEL,
@@ -2618,7 +3066,11 @@ async function handleHttpRequest(req, res) {
       });
     } catch (error) {
       console.error('获取Realtime token失败:', error);
-      sendJson(res, 502, { ok: false, message: `获取Realtime token失败: ${error.message}` });
+      const msg = (error && error.message) || '';
+      const friendly = /incorrect api key|invalid.*key/i.test(msg)
+        ? 'OpenAI API 密钥无效或已过期，请到 https://platform.openai.com/account/api-keys 检查并更新 backend/.env 中的 OPENAI_API_KEY 后重启后端。'
+        : `获取Realtime token失败: ${msg}`;
+      sendJson(res, 502, { ok: false, message: friendly });
     }
     return;
   }
@@ -2658,9 +3110,9 @@ wss.on('connection', (clientWs, req) => {
     }
   };
   
-  // 创建到 OpenAI Realtime API 的连接
+  // 创建到 OpenAI Realtime API 的连接（只使用有效长度的 key，避免 "sk-" 导致报错）
   function connectToOpenAI(apiKey = sessionConfig.apiKey || OPENAI_API_KEY) {
-    const finalApiKey = apiKey || OPENAI_API_KEY;
+    const finalApiKey = getValidOpenAIKey(apiKey) || OPENAI_API_KEY;
     if (!finalApiKey) {
       const err = new Error('未配置 OPENAI_API_KEY，请在 backend/.env 文件中设置');
       console.error(`[${sessionId}] ❌ ${err.message}`);
@@ -2954,6 +3406,16 @@ wss.on('connection', (clientWs, req) => {
           });
           return;
         }
+        const gate = evaluateLectureGate(board);
+        if (!gate.ok) {
+          sendToClient({
+            type: 'error',
+            code: 'LECTURE_GATE_NOT_READY',
+            message: gate.message,
+            missing: gate.missing
+          });
+          return;
+        }
         sessionConfig.board_id = boardId;
         sessionConfig.instructions = buildTeachingInstructionsFromBoard(board, locale);
         if (!syncSessionToOpenAI() && (OPENAI_API_KEY || sessionConfig.apiKey)) {
@@ -3016,18 +3478,15 @@ wss.on('connection', (clientWs, req) => {
         }
         syncSessionToOpenAI();
       } else if (data.type === 'update_api_key') {
-        // 更新API密钥（重新连接）
-        if (data.apiKey && typeof data.apiKey === 'string') {
-          sessionConfig.apiKey = data.apiKey;
-          if (openAIWs) {
-            openAIWs.close();
-          }
-          connectToOpenAI(data.apiKey).catch(console.error);
+        // 更新API密钥（重新连接）；无效或过短的 key 则使用后端 .env 的 key
+        const raw = (data.apiKey && typeof data.apiKey === 'string') ? data.apiKey.trim().replace(/\r/g, '') : '';
+        const useKey = (raw && raw !== 'sk-' && raw.length >= 20) ? raw : OPENAI_API_KEY;
+        sessionConfig.apiKey = useKey || null;
+        if (openAIWs) openAIWs.close();
+        if (useKey) {
+          connectToOpenAI(useKey).catch(console.error);
         } else {
-          sendToClient({
-            type: 'error',
-          message: 'OPENAI_API_KEY 为空，无法连接 Realtime API'
-          });
+          sendToClient({ type: 'error', message: 'OPENAI_API_KEY 为空，无法连接 Realtime API' });
         }
       }
     } catch (error) {
@@ -3083,9 +3542,9 @@ server.on('error', (error) => {
 });
 
 try {
-  server.listen(PORT, () => {
-  console.log(`✅ Realtime 音频流服务器运行在 ws://localhost:${PORT}`);
-  console.log(`📝 前端应连接到: ws://localhost:${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Realtime 音频流服务器运行在 ws://0.0.0.0:${PORT}`);
+  console.log(`📝 前端应连接到: ws://<服务器IP或域名>:${PORT} 或通过 Nginx 反向代理`);
   console.log(`🤖 Realtime: OpenAI，文本兜底: OpenAI / OpenRouter`);
   console.log(`📚 Blackboard API:`);
   console.log(`   POST http://localhost:${PORT}/create-board`);

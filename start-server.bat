@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-set "BACKEND_DIR=%~dp0"
+set "BAT_DIR=%~dp0"
+set "BACKEND_DIR=%BAT_DIR%backend\"
 cd /d "%BACKEND_DIR%"
 
 echo == Backend launcher ==
@@ -16,5 +17,7 @@ if not "%EC%"=="0" (
   pause
   exit /b %EC%
 )
+echo Server exited. Press any key to close...
+pause
 exit /b 0
 
