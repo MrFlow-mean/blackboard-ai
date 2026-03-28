@@ -2230,7 +2230,7 @@
           }
         } catch (e) {
           console.error('更新板书失败:', e);
-          window.alert(e?.message || voiceT('board_update_fail'));
+          pushSessionMessage('system', e?.message || voiceT('board_update_fail'));
         }
       }
     }
@@ -2731,6 +2731,57 @@
       return /(直接开始|直接讲|开始吧|立刻开始|马上开始|不要追问|不用追问|别追问|别问了|不重要.*(直接|开始)|skip\s*(the)?\s*questions?|no\s+more\s+questions?)/i.test(raw);
     }
 
+    function buildBestEffortPmSpec(goalText = '') {
+      const rawGoal = (goalText || sessionRuntime?.pm?.goal_text || buildGoalTextFromClarify()).toString().trim();
+      const currentSpec = sessionRuntime?.pm?.learning_spec && typeof sessionRuntime.pm.learning_spec === 'object'
+        ? { ...sessionRuntime.pm.learning_spec }
+        : {};
+      const topicCandidate = (currentSpec.topic || clarifyState.topic || extractTopicCandidate(rawGoal) || '').toString().trim();
+      const topic = topicCandidate || (voiceLang === 'en' ? 'Current learning task' : '当前学习任务');
+      const goal = (currentSpec.goal || rawGoal || topic).toString().trim();
+      const level = (currentSpec.level || clarifyState.level || (voiceLang === 'en'
+        ? 'Not fully specified yet. Start at an accessible level and adjust from feedback.'
+        : '细节还没完全说明；先按容易进入的难度开始，再根据反馈调整。')).toString().trim();
+      const constraints = [];
+      const appendConstraint = (value) => {
+        const clean = (value || '').toString().trim();
+        if (!clean) return;
+        if (constraints.includes(clean)) return;
+        constraints.push(clean);
+      };
+      (Array.isArray(currentSpec.constraints) ? currentSpec.constraints : []).forEach(appendConstraint);
+      (Array.isArray(clarifyState.notes) ? clarifyState.notes.slice(-4) : []).forEach(appendConstraint);
+      const inferredSubjectType = ((currentSpec.subject_type || inferQuickSubjectType([
+        topic,
+        goal,
+        constraints.join('\n')
+      ].filter(Boolean).join('\n'))) || 'mixed').toString().trim().toLowerCase();
+      const normalizedSubjectType = inferredSubjectType === 'science' || inferredSubjectType === 'humanities'
+        ? inferredSubjectType
+        : 'general';
+      const existingBullets = Array.isArray(sessionRuntime?.pm?.pm_summary_bullets)
+        ? sessionRuntime.pm.pm_summary_bullets.map(x => (x || '').toString().trim()).filter(Boolean).slice(0, 6)
+        : [];
+      const summaryBullets = existingBullets.length ? existingBullets : [
+        topic ? (voiceLang === 'en' ? `Topic: ${topic}` : `学习主题：${topic}`) : '',
+        goal ? (voiceLang === 'en' ? `Goal: ${goal}` : `学习目标：${goal}`) : '',
+        level ? (voiceLang === 'en' ? `Level: ${level}` : `当前水平：${level}`) : '',
+        constraints.length ? (voiceLang === 'en'
+          ? `Constraints: ${constraints.slice(0, 3).join('; ')}`
+          : `约束与偏好：${constraints.slice(0, 3).join('\uFF1B')}`) : ''
+      ].filter(Boolean).slice(0, 6);
+      return {
+        topic,
+        goal,
+        level,
+        constraints: constraints.slice(0, 10),
+        subject_type: normalizedSubjectType,
+        summary_bullets: summaryBullets,
+        goal_text: rawGoal || goal,
+        ready_for_board: isPmSummaryReadyForBoard() || isForceStartRequest(rawGoal) || !!rawGoal
+      };
+    }
+
     async function createBoardFromGoal(goalText) {
       const targetLang = resolveTargetLanguageForBoard(goalText);
       const goalWithLanguageLock = targetLang
@@ -2826,6 +2877,35 @@
           sessionRuntime.pm.learning_spec = { ...(sessionRuntime.pm.learning_spec || {}), ...safeSpec };
         }
       }
+      const pmSpecPayload = buildBestEffortPmSpec(goalWithLanguageLock);
+      const mergedConstraints = [];
+      const appendMergedConstraint = (value) => {
+        const clean = (value || '').toString().trim();
+        if (!clean) return;
+        if (mergedConstraints.includes(clean)) return;
+        mergedConstraints.push(clean);
+      };
+      (Array.isArray(learningSpecPayload?.constraints) ? learningSpecPayload.constraints : []).forEach(appendMergedConstraint);
+      (Array.isArray(pmSpecPayload.constraints) ? pmSpecPayload.constraints : []).forEach(appendMergedConstraint);
+      learningSpecPayload = {
+        ...(learningSpecPayload || {}),
+        topic: (learningSpecPayload?.topic || pmSpecPayload.topic || '').toString().trim(),
+        goal: (learningSpecPayload?.goal || pmSpecPayload.goal || goalWithLanguageLock || '').toString().trim(),
+        level: (learningSpecPayload?.level || pmSpecPayload.level || '').toString().trim(),
+        constraints: mergedConstraints.slice(0, 10),
+        subject_type: (() => {
+          const raw = (learningSpecPayload?.subject_type || '').toString().trim().toLowerCase();
+          if (raw === 'science' || raw === 'humanities' || raw === 'mixed') return raw;
+          return pmSpecPayload.subject_type === 'general' ? 'mixed' : pmSpecPayload.subject_type;
+        })()
+      };
+      if (sessionRuntime?.pm) {
+        sessionRuntime.pm.learning_spec = { ...(sessionRuntime.pm.learning_spec || {}), ...learningSpecPayload };
+        sessionRuntime.pm.pm_summary_bullets = Array.isArray(pmSpecPayload.summary_bullets) ? pmSpecPayload.summary_bullets : [];
+        sessionRuntime.pm.goal_text = pmSpecPayload.goal_text || goalWithLanguageLock || '';
+        sessionRuntime.pm.ready_for_board = pmSpecPayload.ready_for_board === true;
+      }
+
 
       const response = await fetch(`${BOARD_API_BASE}/create-board`, {
         method: 'POST',
@@ -2835,9 +2915,11 @@
           locale: voiceLang,
           sources,
           board_only_sources: boardOnlySources,
-          pm_ready_for_board: isPmSummaryReadyForBoard(),
-          pm_summary_bullets: Array.isArray(sessionRuntime?.pm?.pm_summary_bullets) ? sessionRuntime.pm.pm_summary_bullets : [],
-          learning_spec: learningSpecPayload || sessionRuntime?.pm?.learning_spec || null
+          pm_spec: pmSpecPayload,
+          pm_ready_for_board: pmSpecPayload.ready_for_board === true,
+          pm_summary_bullets: Array.isArray(pmSpecPayload.summary_bullets) ? pmSpecPayload.summary_bullets : [],
+          learning_spec: learningSpecPayload || sessionRuntime?.pm?.learning_spec || null,
+          goal_text: pmSpecPayload.goal_text || goalWithLanguageLock || ''
         })
       });
       if (!response.ok) {
@@ -3607,10 +3689,8 @@
       const pmReady = await ensurePmSummaryReadyForBoard(cleanGoal);
       if (!pmReady) {
         pushSessionMessage('system', voiceLang === 'en'
-          ? 'The PM summary is not complete yet. We will continue clarifying first, then generate the blackboard and start teaching together.'
-          : '项目经理总结还未完成。我们先继续澄清，待“需求总结 + 板书生成”都完成后再开始讲解。');
-        await setRealtimeClarificationMode();
-        return;
+          ? 'Some details are still incomplete, but I will start building the blackboard with the current information. You can add more later and I will update it.'
+          : '有些细节还没完全说清，但我先按当前信息继续生成板书。你后面随时补充，我再帮你更新板书。');
       }
 
       boardState.creatingBoard = true;
@@ -3639,7 +3719,7 @@
         await sendTextByPreferredTransport(kickoffPrompt);
       } catch (e) {
         console.error('生成板书失败:', e);
-        window.alert(e?.message || voiceT('board_create_fail'));
+        pushSessionMessage('system', e?.message || voiceT('board_create_fail'));
       } finally {
         boardState.creatingBoard = false;
       }
@@ -3692,7 +3772,7 @@
         }
       } catch (e) {
         console.error('更新板书失败:', e);
-        window.alert(e?.message || voiceT('board_update_fail'));
+        pushSessionMessage('system', e?.message || voiceT('board_update_fail'));
       } finally {
         boardState.updatingBoard = false;
       }
@@ -4339,8 +4419,9 @@
         await ensureBackendReachable();
         const resp = await fetch(`${BOARD_API_BASE}/health`);
         const data = await resp.json().catch(() => ({}));
-        backendCaps.hasOpenAIKey = !!data.has_openai_key;
-        backendCaps.hasOpenRouterKey = !!data.has_openrouter_key;
+        // Backward/forward compatible: support both old/new health field names.
+        backendCaps.hasOpenAIKey = Boolean(data.has_openai_key ?? data.has_openai);
+        backendCaps.hasOpenRouterKey = Boolean(data.has_openrouter_key ?? data.has_openrouter);
       } catch (e) {
         // ignore
       } finally {
@@ -4526,7 +4607,7 @@
         await sendTextByPreferredTransport(cleanText);
       } catch (error) {
         console.error('黑板流程失败:', error);
-        window.alert(error.message || voiceT('board_create_fail'));
+        pushSessionMessage('system', error.message || voiceT('board_create_fail'));
       }
     }
 
@@ -4551,7 +4632,6 @@
                   : 'OpenAI Realtime 返回错误，请查看后端日志。');
                 console.error('Realtime event error:', evt);
                 pushSessionMessage('system', msg);
-                window.alert(msg);
                 resetRealtimeAssistantTextState();
                 return;
               }
@@ -4651,7 +4731,7 @@
             } else if (payload.type === 'error') {
               const msg = (payload.message || '').toString().trim() || '服务端返回错误';
               console.error('WS错误:', msg);
-              window.alert(msg);
+              pushSessionMessage('system', msg);
             }
           } catch (e) {
             // ignore

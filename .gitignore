@@ -4,6 +4,7 @@
 backend/.env
 .env.local
 .env.*.local
+.claude/
 
 # 依赖
 node_modules/

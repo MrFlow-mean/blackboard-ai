@@ -4,6 +4,12 @@ $ErrorActionPreference = "Stop"
 function Info([string]$msg) { Write-Host $msg -ForegroundColor Cyan }
 function Warn([string]$msg) { Write-Host $msg -ForegroundColor Yellow }
 function Err([string]$msg)  { Write-Host $msg -ForegroundColor Red }
+function PauseIfStandalone([string]$msg) {
+  if ($env:BACKEND_LAUNCHED_FROM_BAT -eq "1") { return }
+  if ($Host.Name -eq "ConsoleHost") {
+    Read-Host $msg | Out-Null
+  }
+}
 
 function HasCmd([string]$name) {
   return [bool](Get-Command $name -ErrorAction SilentlyContinue)
@@ -17,8 +23,31 @@ function NodeMajorVersion {
   return [int]$m.Groups[1].Value
 }
 
+function GetListeningProcess([int]$port) {
+  $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if (-not $conn) { return $null }
+
+  $proc = Get-CimInstance Win32_Process -Filter ("ProcessId = {0}" -f $conn.OwningProcess) -ErrorAction SilentlyContinue
+  [pscustomobject]@{
+    ProcessId = $conn.OwningProcess
+    CommandLine = if ($proc) { $proc.CommandLine } else { $null }
+  }
+}
+
+function HealthOk([string]$url) {
+  try {
+    $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
+    return ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400)
+  } catch {
+    return $false
+  }
+}
+
 $BackendDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $BackendDir
+$Port = 3002
+$HealthUrl = "http://127.0.0.1:$Port/health"
 
 Info "== Backend launcher =="
 Info ("Dir: " + $BackendDir)
@@ -72,12 +101,41 @@ if ($null -ne $major -and $major -lt 18) {
   if ($LASTEXITCODE -ne 0) { throw "node-fetch install failed (exit code: $LASTEXITCODE)" }
 }
 
+$listener = GetListeningProcess -port $Port
+if ($listener) {
+  $cmd = $listener.CommandLine
+  if ($cmd -and $cmd -like "*realtime-audio-server.js*") {
+    Warn ("Backend is already running on port {0}." -f $Port)
+    Info ("PID: " + $listener.ProcessId)
+    Info ("Health: " + $HealthUrl)
+    if (HealthOk -url $HealthUrl) {
+      Info "Status: healthy"
+    } else {
+      Warn "Health check did not respond, but the port is occupied by the backend process."
+    }
+    PauseIfStandalone "Server already running. Press Enter to close"
+    exit 10
+  }
+
+  Err ("Port {0} is already in use." -f $Port)
+  Err ("PID: " + $listener.ProcessId)
+  if ($cmd) {
+    Err ("Command: " + $cmd)
+  }
+  PauseIfStandalone "Port is occupied. Press Enter to close"
+  exit 1
+}
+
 Info ""
 Info "Starting server (npm start)..."
-Info "WS: ws://localhost:3002"
-Info "Health: http://localhost:3002/health"
+Info ("WS: ws://localhost:{0}" -f $Port)
+Info ("Health: " + $HealthUrl)
 Info ""
 
 & npm start
-exit $LASTEXITCODE
+$exitCode = $LASTEXITCODE
+if ($exitCode -ne 0) {
+  PauseIfStandalone "Server exited with an error. Press Enter to close"
+}
+exit $exitCode
 
